@@ -10,7 +10,7 @@ const (
 	CodeRedirect = 302
 )
 func githubHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("------------------> %#v\n%", r)
+	fmt.Printf("------------------> %#v\n", r)
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		fmt.Printf("-----------> read body err %s\n", err.Error())
@@ -18,11 +18,13 @@ func githubHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("----------------> get request from  github ", string(b))
 
-	c, err := NewGitHub("2369ed831a59847924b4", "510bb29970fcd684d0e7136a5947f92710332c98", ReDirectUrl, []string{"repo", "user:email"})
-	if err != nil {
-		fmt.Fprint(w, err)
-	}
-	t := Auth(c, "/")
+	//c, err := NewGitHub("2369ed831a59847924b4", "510bb29970fcd684d0e7136a5947f92710332c98", ReDirectUrl, []string{"repo", "user:email"})
+	//if err != nil {
+	//	fmt.Fprint(w, err)
+	//}
+	//t := Auth(c, "/")
 
-	http.Redirect(w, r, t, CodeRedirect)
+	//http.Redirect(w, r, t, CodeRedirect)
+
+	fmt.Fprintf(w, "get request %#v\n", r)
 }
