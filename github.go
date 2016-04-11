@@ -7,7 +7,6 @@ import (
 	"strings"
 )
 
-
 func NewGitHub(id, secret, redirectUrl string, scopes []string) (Config, error) {
 	github := Github{new(oauth2.Config)}
 	if err := github.setClientId(id); err != nil {
@@ -33,7 +32,7 @@ func NewGitHub(id, secret, redirectUrl string, scopes []string) (Config, error) 
 }
 
 type Github struct {
-	 *oauth2.Config
+	*oauth2.Config
 }
 
 func (c *Github) setClientId(id string) error {
@@ -77,7 +76,10 @@ func (c *Github) setScope(scopes []string) error {
 	return nil
 }
 
+func Auth(c Config, status string, opts ...oauth2.AuthCodeOption) string {
+	return c.(*Github).AuthCodeURL(status, opts...)
+}
 
-func Auth(c Config, status string) string {
-	return c.(*Github).AuthCodeURL(status)
+func Exchange(code string) (*oauth2.Token, error) {
+	return tokenConfig.(*Github).Exchange(oauth2.NoContext, code)
 }

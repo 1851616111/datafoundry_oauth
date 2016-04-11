@@ -11,5 +11,3 @@ type Config interface {
 	setRedirectURL(redirectUrl string) error
 	setScope(scopes []string) error
 }
-
-
