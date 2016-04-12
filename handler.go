@@ -14,7 +14,7 @@ const (
 )
 
 //curl http://127.0.0.1:9443/v1/github-redirect?code=4fda33093c9fc12711f1&\state=ccc
-//curl http://etcdsystem.servicebroker.dataos.io:2379/v2/keys  -u asiainfoLDP:6ED9BA74-75FD-4D1B-8916-842CB936AC1A
+//curl http://etcdsystem.servicebroker.dataos.io:2379/v2/keys/oauth/namespace/  -u asiainfoLDP:6ED9BA74-75FD-4D1B-8916-842CB936AC1A
 //curl -H "namespace:namespace123" -H "user:panxy3" -H "beartoken:xxxxxxxxxxxxxxxx" http://127.0.0.1:9443/v1/github-redirect?code=4fda33093c9fc12711f1\&state=ccc
 func githubHandler(w http.ResponseWriter, r *http.Request) {
 	userInfo := headers(r, "namespace", "user", "beartoken")
