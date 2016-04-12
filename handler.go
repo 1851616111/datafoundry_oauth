@@ -13,9 +13,17 @@ const (
 	Option_Github_State = "state"
 )
 
-//curl http://127.0.0.1:9443/v1/github-redirect?code=8fdf6827d52a1aca5052\&state=9999
+//curl http://127.0.0.1:9443/v1/github-redirect?code=4fda33093c9fc12711f1&\state=ccc
+//curl http://etcdsystem.servicebroker.dataos.io:2379/v2/keys  -u asiainfoLDP:6ED9BA74-75FD-4D1B-8916-842CB936AC1A
+//curl -H "namespace:namespace123" -H "user:panxy3" -H "beartoken:xxxxxxxxxxxxxxxx" http://127.0.0.1:9443/v1/github-redirect?code=4fda33093c9fc12711f1\&state=ccc
 func githubHandler(w http.ResponseWriter, r *http.Request) {
-	namespace := r.Header.Get("namespace")
+	userInfo := headers(r, "namespace", "user", "beartoken")
+	fmt.Printf("%#v\n", userInfo)
+	if len(userInfo) != 3 {
+		fmt.Fprintf(w, "request header not contains [namespace user beartoken]\n")
+		return
+	}
+
 	raw, err := queryRequestURI(r)
 	if err != nil {
 		fmt.Fprintf(w, "parse request url %s err %s", r.RequestURI, err.Error())
@@ -45,14 +53,19 @@ func githubHandler(w http.ResponseWriter, r *http.Request) {
 
 	retRaw, _ := url.ParseQuery(string(b))
 	githubToken := retRaw.Get("access_token")
-	if len(githubToken) > 0 {
-		if err := etcd.set(namespace, githubToken); err != nil {
-			fmt.Fprintf(w, "store namespace %s, token  %s\n err", namespace, githubToken)
-			return
-		}
+	if len(githubToken) == 0 {
+		fmt.Fprintf(w, "get github token null reaseon %s", string(b))
+		return
 	}
 
-	fmt.Fprintf(w, "get request %#s\n", githubToken)
+	userInfo["github_token"] = githubToken
+	if err := etcdClient.namespaceSet(userInfo["namespace"], userInfo["user"], userInfo); err != nil {
+		fmt.Fprintf(w, "store namespace %s err %s", userInfo["namespace"], err.Error())
+		return
+	}
+
+	fmt.Fprintf(w, "ok")
+
 }
 
 //ex. /v1/github-redirect?code=8fdf6827d52a1aca5052&state=ppp

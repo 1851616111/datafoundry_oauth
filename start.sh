@@ -5,6 +5,7 @@ os::getEnv() {
 }
 
 os:export::Develop::Env() {
+#    export http_proxy=http://proxy.asiainfo.com:8080
     export GITHUB_REDIRECT_URL=http://oauth2-oauth.app.asiainfodata.com/v1/github-redirect
     export GITHUB_CLIENT_ID=2369ed831a59847924b4
     export GITHUB_CLIENT_SECRET=510bb29970fcd684d0e7136a5947f92710332c98
