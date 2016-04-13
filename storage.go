@@ -16,21 +16,23 @@ type storeConfig struct {
 	Addr, Port, User, Passwd string
 }
 
-func (c *storeConfig) newClient() client {
-	return client{etcd.NewClient([]string{fmt.Sprintf("%s:%s", c.Addr, c.Port)})}
+func (c *storeConfig) newClient() Store {
+	cli := etcd.NewClient([]string{fmt.Sprintf("%s:%s", c.Addr, c.Port)})
+	cli.SetCredentials(c.User, c.Passwd)
+	return &Etcd{cli}
 }
 
 type Store interface {
-	set(key, value string) error
+	set(key string, value interface{}) error
 	namespaceSet(namespace, key string, value interface{}) error
-	get(key string) (string, error)
+	get(key string, sort, recursive bool) (string, error)
 }
 
-type client struct {
+type Etcd struct {
 	*etcd.Client
 }
 
-func (c *client) set(key string, value interface{}) error {
+func (c *Etcd) set(key string, value interface{}) error {
 	t := reflect.TypeOf(value).Kind()
 	switch t {
 	case reflect.String:
@@ -48,7 +50,7 @@ func (c *client) set(key string, value interface{}) error {
 	return nil
 }
 
-func (c *client) get(key string, sort, recursive bool) (string, error) {
+func (c *Etcd) get(key string, sort, recursive bool) (string, error) {
 	rsp, err := c.Get(key, sort, recursive)
 	if err != nil {
 		return "", err
@@ -57,7 +59,7 @@ func (c *client) get(key string, sort, recursive bool) (string, error) {
 	return rsp.Node.Value, nil
 }
 
-func (c *client) namespaceSet(namespace, key string, value interface{}) error {
+func (c *Etcd) namespaceSet(namespace, key string, value interface{}) error {
 	path := fmt.Sprintf("%s/%s/%s", Etcd_Sub_Root_Registry, namespace, key)
-	return etcdClient.set(path, value)
+	return db.set(path, value)
 }

@@ -19,9 +19,13 @@ if [ "$Dev" == "true" ]||[ "$Dev" == "" ];then
     os:export::Develop::Env
 fi
 
+export DATAFACTORY_HOST_ADDR=https://lab.asiainfodata.com:8443
+
 export ETCD_HTTP_ADDR=http://etcdsystem.servicebroker.dataos.io
 export ETCD_HTTP_PORT=2379
 export ETCD_USER=asiainfoLDP
 export ETCD_PASSWORD=6ED9BA74-75FD-4D1B-8916-842CB936AC1A
+
+#GO15VENDOREXPERIMENT=1 go build
 
 ./datafactory_oauth2

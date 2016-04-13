@@ -18,7 +18,7 @@ const (
 //curl -H "namespace:namespace123" -H "user:panxy3" -H "beartoken:xxxxxxxxxxxxxxxx" http://127.0.0.1:9443/v1/github-redirect?code=4fda33093c9fc12711f1\&state=ccc
 func githubHandler(w http.ResponseWriter, r *http.Request) {
 	userInfo := headers(r, "namespace", "user", "beartoken")
-	fmt.Printf("%#v\n", userInfo)
+
 	if len(userInfo) != 3 {
 		fmt.Fprintf(w, "request header not contains [namespace user beartoken]\n")
 		return
@@ -52,15 +52,42 @@ func githubHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	retRaw, _ := url.ParseQuery(string(b))
-	githubToken := retRaw.Get("access_token")
-	if len(githubToken) == 0 {
+	userInfo["github_token"] = retRaw.Get("access_token")
+	if len(userInfo["github_token"]) == 0 {
 		fmt.Fprintf(w, "get github token null reaseon %s", string(b))
 		return
 	}
 
-	userInfo["github_token"] = githubToken
-	if err := etcdClient.namespaceSet(userInfo["namespace"], userInfo["user"], userInfo); err != nil {
+	if err := db.namespaceSet(userInfo["namespace"], userInfo["user"], userInfo); err != nil {
 		fmt.Fprintf(w, "store namespace %s err %s", userInfo["namespace"], err.Error())
+		return
+	}
+
+	option := setSecretOption(userInfo)
+
+	if err := option.validate(); err != nil {
+		fmt.Fprintf(w, "validate datafoundry secret option err %s\n", err.Error())
+		return
+	}
+
+	secret, err := getSecret(option)
+	if NotFount(err) {
+		if err := createSecret(option); err != nil {
+			fmt.Fprintf(w, "create datafoundry secret err %s\n", err.Error())
+			return
+		}
+
+		fmt.Fprint(w, "create datafaoundry secret success\n")
+		return
+	}
+
+	if err != nil {
+		fmt.Fprintf(w, "get datafoundry secret err %s\n", err.Error())
+		return
+	}
+
+	if err := updateSecret(secret, option); err != nil {
+		fmt.Fprintf(w, "update datafoundry secret err %s\n", err.Error())
 		return
 	}
 
@@ -75,4 +102,14 @@ func queryRequestURI(r *http.Request) (url.Values, error) {
 		return nil, err
 	}
 	return url.ParseQuery(strings.TrimPrefix(uri.RawQuery, uri.Path+"?"))
+}
+
+func setSecretOption(info map[string]string) *secretOptions {
+	return &secretOptions{
+		NameSpace:        info["namespace"],
+		UserName:         info["user"],
+		SecretName:       generateName(info["namespace"], info["user"]),
+		DatafactoryToken: info["beartoken"],
+		GitHubToken:      info["github_token"],
+	}
 }
