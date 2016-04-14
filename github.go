@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
+	api "github.com/openshift/origin/pkg/user/api/v1"
 	"golang.org/x/oauth2"
 	githuboauth "golang.org/x/oauth2/github"
 	"strings"
@@ -82,4 +84,19 @@ func Auth(c Config, status string, opts ...oauth2.AuthCodeOption) string {
 
 func Exchange(code string) (*oauth2.Token, error) {
 	return tokenConfig.(*Github).Exchange(oauth2.NoContext, code)
+}
+
+func getGithubInfoByDFUser(user *api.User) (map[string]string, error) {
+	key := getUserKey(user.Name, "github.com")
+	info, err := db.get(key, false, false)
+	if err != nil {
+		return nil, err
+	}
+
+	userInfo := map[string]string{}
+	if err := json.Unmarshal([]byte(info), &userInfo); err != nil {
+		return nil, err
+	}
+
+	return userInfo, err
 }

@@ -73,6 +73,8 @@ func httpGet(getUrl string, credential ...string) ([]byte, error) {
 		switch resp.StatusCode {
 		case 404:
 			return nil, ErrNotFound
+		case 200:
+			return ioutil.ReadAll(resp.Body)
 		}
 		if resp.StatusCode < 200 || resp.StatusCode > 300 {
 			return nil, fmt.Errorf("[http get] status err %s, %d\n", getUrl, resp.StatusCode)

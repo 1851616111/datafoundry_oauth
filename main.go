@@ -13,6 +13,7 @@ var (
 	GithubRedirectUrl, GithubClientID, GithubClientSecret string
 	db                                                    Store
 	DFHost                                                string
+	DF_API_Auth                                           string
 )
 
 func init() {
@@ -20,11 +21,13 @@ func init() {
 	initOauth2Plugin()
 	initOauthConfig()
 	initDFHost()
+	initAPI()
 }
 
 func main() {
 
 	http.HandleFunc("/v1/github-redirect", githubHandler)
+	http.HandleFunc("/v1/repos/github/owner", githubOwnerReposHandler)
 	http.ListenAndServe(":9443", nil)
 
 }
@@ -65,6 +68,10 @@ func initGithubPlugin() {
 
 func initDFHost() {
 	DFHost = getEnv("DATAFACTORY_HOST_ADDR", true)
+}
+
+func initAPI() {
+	DF_API_Auth = DFHost + "/oapi/v1/users/~"
 }
 
 //https://github.com/login/oauth/authorize?client_id=2369ed831a59847924b4&scope=repo,user:email&state=ccc&redirect_uri=http://oauth2-oauth.app.asiainfodata.com/v1/github-redirect

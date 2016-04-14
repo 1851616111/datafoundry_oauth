@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	Etcd_Sub_Root_Registry = "/oauth/namespace"
+	EtcdNamespaceRegistry = "/oauth/namespaces"
+	EtcdUserRegistry      = "/oauth/users"
 )
 
 type storeConfig struct {

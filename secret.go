@@ -152,3 +152,7 @@ func setSecretURL(namespace string) string {
 func setSecretURLWithName(namespace string, name string) string {
 	return DFHost + fmt.Sprintf(SecretURL, namespace, name)
 }
+
+func getUserKey(user, source string) string {
+	return fmt.Sprintf("%s/%s/%s", EtcdUserRegistry, user, source)
+}

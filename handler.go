@@ -2,10 +2,14 @@ package main
 
 import (
 	"fmt"
+	api "github.com/openshift/origin/pkg/user/api/v1"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
+
+	"encoding/json"
 )
 
 const (
@@ -15,12 +19,12 @@ const (
 
 //curl http://127.0.0.1:9443/v1/github-redirect?code=4fda33093c9fc12711f1&\state=ccc
 //curl http://etcdsystem.servicebroker.dataos.io:2379/v2/keys/oauth/namespace/  -u asiainfoLDP:6ED9BA74-75FD-4D1B-8916-842CB936AC1A
-//curl -H "namespace:namespace123" -H "user:panxy3" -H "beartoken:xxxxxxxxxxxxxxxx" http://127.0.0.1:9443/v1/github-redirect?code=4fda33093c9fc12711f1\&state=ccc
+//curl -H "namespace:namespace123" -H "user:panxy3" -H "bearer:xxxxxxxxxxxxxxxx" http://127.0.0.1:9443/v1/github-redirect?code=4fda33093c9fc12711f1\&state=ccc
 func githubHandler(w http.ResponseWriter, r *http.Request) {
-	userInfo := headers(r, "namespace", "user", "beartoken")
+	userInfo := headers(r, "namespace", "user", "bearer")
 
 	if len(userInfo) != 3 {
-		fmt.Fprintf(w, "request header not contains [namespace user beartoken]\n")
+		fmt.Fprintf(w, "request header not contains [namespace user bearer]\n")
 		return
 	}
 
@@ -52,20 +56,21 @@ func githubHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	retRaw, _ := url.ParseQuery(string(b))
-	userInfo["github_token"] = retRaw.Get("access_token")
-	if len(userInfo["github_token"]) == 0 {
+	userInfo["credential_value"] = retRaw.Get("access_token")
+	if len(userInfo["credential_value"]) == 0 {
 		fmt.Fprintf(w, "get github token null reaseon %s", string(b))
 		return
 	}
+	completeGithubInfo(userInfo)
 
-	key := fmt.Sprintf("/oauth/namespace/%s/%s", userInfo["namespace"], userInfo["user"])
+	key := fmt.Sprintf("/oauth/namespaces/%s/%s/%s", userInfo["namespace"], userInfo["user"], userInfo["source"])
 	if err := db.set(key, userInfo); err != nil {
 		fmt.Fprintf(w, "store namespace %s err %s", userInfo["namespace"], err.Error())
 		return
 	}
+	go syncOauthUser(db, userInfo)
 
 	option := setSecretOption(userInfo)
-
 	if err := option.validate(); err != nil {
 		fmt.Fprintf(w, "validate datafoundry secret option err %s\n", err.Error())
 		return
@@ -96,6 +101,36 @@ func githubHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request) {
+	var user *api.User
+	var err error
+	if user, err = authDFRequest(r); err != nil {
+		fmt.Fprintf(w, "[GET]/user/repos, auth err %s\n", err.Error())
+		return
+	}
+
+	var userInfo map[string]string
+	if userInfo, err = getGithubInfoByDFUser(user); err != nil {
+		fmt.Fprintf(w, "[GET]/user/repos, get user info err %s\n", err.Error())
+		return
+	}
+
+	var repos *Repos
+	if repos, err = GetUserRepos(userInfo); err != nil {
+		fmt.Fprintf(w, "[GET]/user/repos, request github err %s\n", err.Error())
+		return
+	}
+
+	newRepos := repos.Convert()
+	b, err := json.Marshal(newRepos)
+	if err != nil {
+		fmt.Fprintf(w, "[GET]/user/repos, convert return err %s\n", string(b))
+		return
+	}
+
+	fmt.Fprintf(w, "%s", string(b))
+}
+
 //ex. /v1/github-redirect?code=8fdf6827d52a1aca5052&state=ppp
 func queryRequestURI(r *http.Request) (url.Values, error) {
 	uri, err := url.ParseRequestURI(r.RequestURI)
@@ -110,7 +145,21 @@ func setSecretOption(info map[string]string) *secretOptions {
 		NameSpace:        info["namespace"],
 		UserName:         info["user"],
 		SecretName:       generateName(info["namespace"], info["user"]),
-		DatafactoryToken: info["beartoken"],
-		GitHubToken:      info["github_token"],
+		DatafactoryToken: info["bearer"],
+		GitHubToken:      info["credential_value"],
 	}
+}
+
+func syncOauthUser(db Store, userInfo map[string]string) {
+	k := getUserKey(userInfo["user"], userInfo["source"])
+	if err := db.set(k, userInfo); err != nil {
+		//todo err handler
+		fmt.Printf("add user info err %s", err.Error())
+	}
+}
+
+func completeGithubInfo(info map[string]string) {
+	info["time"] = time.Now().String()
+	info["source"] = "github.com"
+	info["credential_key"] = "Authorization:token"
 }
