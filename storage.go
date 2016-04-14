@@ -24,7 +24,6 @@ func (c *storeConfig) newClient() Store {
 
 type Store interface {
 	set(key string, value interface{}) error
-	namespaceSet(namespace, key string, value interface{}) error
 	get(key string, sort, recursive bool) (string, error)
 }
 
@@ -59,7 +58,3 @@ func (c *Etcd) get(key string, sort, recursive bool) (string, error) {
 	return rsp.Node.Value, nil
 }
 
-func (c *Etcd) namespaceSet(namespace, key string, value interface{}) error {
-	path := fmt.Sprintf("%s/%s/%s", Etcd_Sub_Root_Registry, namespace, key)
-	return db.set(path, value)
-}

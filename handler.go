@@ -58,7 +58,8 @@ func githubHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := db.namespaceSet(userInfo["namespace"], userInfo["user"], userInfo); err != nil {
+	key := fmt.Sprintf("/oauth/namespace/%s/%s", userInfo["namespace"], userInfo["user"])
+	if err := db.set(key, userInfo); err != nil {
 		fmt.Fprintf(w, "store namespace %s err %s", userInfo["namespace"], err.Error())
 		return
 	}
