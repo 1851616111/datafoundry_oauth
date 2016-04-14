@@ -2,24 +2,52 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"strings"
 )
 
 const (
 	Github_API_Owner_Repos = "https://api.github.com/user/repos"
+	Github_API_Owner_Orgs  = "https://api.github.com/user/orgs"
+	Github_API_Org_Repos   = "https://api.github.com/orgs/%s/repos"
 )
 
-func GetUserRepos(userInfo map[string]string) (*Repos, error) {
-	credentials := strings.SplitN(userInfo["credential_key"], ":", 2)
-	if len(credentials) != 2 {
-		return nil, errors.New(fmt.Sprintf("[GET]/user/repos, user info credential_key %v\n not right\n", credentials))
-	}
-
-	credKey, credValue := credentials[0], fmt.Sprintf("%s %s", credentials[1], userInfo["credential_value"])
+func GetOwnerRepos(userInfo map[string]string) (*Repos, error) {
+	credKey, credValue := getCredentials(userInfo)
 
 	b, err := get(Github_API_Owner_Repos, credKey, credValue)
+	if err != nil {
+		return nil, err
+	}
+
+	repos := &Repos{}
+	if err := json.Unmarshal(b, &repos); err != nil {
+		return nil, err
+	}
+
+	return repos, nil
+}
+
+func GetOwnerOrgs(userInfo map[string]string) ([]Org, error) {
+	credKey, credValue := getCredentials(userInfo)
+
+	b, err := get(Github_API_Owner_Orgs, credKey, credValue)
+	if err != nil {
+		return nil, err
+	}
+
+	orgs := []Org{}
+	if err := json.Unmarshal(b, &orgs); err != nil {
+		return nil, err
+	}
+
+	return orgs, nil
+}
+
+func GetOrgReps(userInfo map[string]string, org string) (*Repos, error) {
+	credKey, credValue := getCredentials(userInfo)
+	url := fmt.Sprintf(Github_API_Org_Repos, org)
+
+	b, err := get(url, credKey, credValue)
 	if err != nil {
 		return nil, err
 	}

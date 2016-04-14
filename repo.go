@@ -7,6 +7,10 @@ type NanoRepo struct {
 	Private  bool   `json:"private"`
 }
 
+type Org struct {
+	Login string `json:"login"`
+}
+
 type Owner struct {
 	Login string `json:"login"`
 }

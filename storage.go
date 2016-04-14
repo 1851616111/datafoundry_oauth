@@ -58,4 +58,3 @@ func (c *Etcd) get(key string, sort, recursive bool) (string, error) {
 
 	return rsp.Node.Value, nil
 }
-

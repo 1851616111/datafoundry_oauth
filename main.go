@@ -27,7 +27,9 @@ func init() {
 func main() {
 
 	http.HandleFunc("/v1/github-redirect", githubHandler)
-	http.HandleFunc("/v1/repos/github/owner", githubOwnerReposHandler)
+	http.HandleFunc("/v1/repos/github/owner", githubUserOwnerReposHandler)
+	http.HandleFunc("/v1/repos/github/orgs", githubOrgOwnerReposHandler)
+
 	http.ListenAndServe(":9443", nil)
 
 }
