@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	router "github.com/julienschmidt/httprouter"
+	"log"
 	"net/http"
 )
 
@@ -26,11 +28,14 @@ func init() {
 
 func main() {
 
-	http.HandleFunc("/v1/github-redirect", githubHandler)
-	http.HandleFunc("/v1/repos/github/owner", githubUserOwnerReposHandler)
-	http.HandleFunc("/v1/repos/github/orgs", githubOrgOwnerReposHandler)
+	router := router.New()
 
-	http.ListenAndServe(":9443", nil)
+	router.GET("/v1/github-redirect", githubHandler)
+	router.GET("/v1/repos/github/owner", githubUserOwnerReposHandler)
+	router.GET("/v1/repos/github/orgs", githubOrgOwnerReposHandler)
+	router.GET("/v1/repos/github/users/:user/repos/:repo", getGithubBranchHandler)
+
+	log.Fatal(http.ListenAndServe(":9443", router))
 
 }
 

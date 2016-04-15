@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"encoding/json"
+	"github.com/julienschmidt/httprouter"
 )
 
 const (
@@ -20,7 +21,7 @@ const (
 //curl http://127.0.0.1:9443/v1/github-redirect?code=4fda33093c9fc12711f1&\state=ccc
 //curl http://etcdsystem.servicebroker.dataos.io:2379/v2/keys/oauth/namespace/  -u asiainfoLDP:6ED9BA74-75FD-4D1B-8916-842CB936AC1A
 //curl -H "namespace:namespace123" -H "user:panxy3" -H "bearer:xxxxxxxxxxxxxxxx" http://127.0.0.1:9443/v1/github-redirect?code=4fda33093c9fc12711f1\&state=ccc
-func githubHandler(w http.ResponseWriter, r *http.Request) {
+func githubHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	userInfo := headers(r, "namespace", "user", "bearer")
 
 	if len(userInfo) != 3 {
@@ -101,53 +102,53 @@ func githubHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func githubUserOwnerReposHandler(w http.ResponseWriter, r *http.Request) {
+func githubUserOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var user *api.User
 	var err error
 	if user, err = authDFRequest(r); err != nil {
-		fmt.Fprintf(w, "[GET]/user/repos, auth err %s\n", err.Error())
+		fmt.Fprintf(w, "[GET]/github.com/user/repos, auth err %s\n", err.Error())
 		return
 	}
 
 	var userInfo map[string]string
 	if userInfo, err = getGithubInfoByDFUser(user); err != nil {
-		fmt.Fprintf(w, "[GET]/user/repos, get user info err %s\n", err.Error())
+		fmt.Fprintf(w, "[GET]/github.com/user/repos, get user info err %s\n", err.Error())
 		return
 	}
 
 	var repos *Repos
 	if repos, err = GetOwnerRepos(userInfo); err != nil {
-		fmt.Fprintf(w, "[GET]/user/repos, request github err %s\n", err.Error())
+		fmt.Fprintf(w, "[GET]/github.com/user/repos, request github err %s\n", err.Error())
 		return
 	}
 
 	newRepos := repos.Convert()
 	b, err := json.Marshal(newRepos)
 	if err != nil {
-		fmt.Fprintf(w, "[GET]/user/repos, convert return err %s\n", string(b))
+		fmt.Fprintf(w, "[GET]/github.com/user/repos, convert return err %s\n", string(b))
 		return
 	}
 
 	fmt.Fprintf(w, "%s", string(b))
 }
 
-func githubOrgOwnerReposHandler(w http.ResponseWriter, r *http.Request) {
+func githubOrgOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var user *api.User
 	var err error
 	if user, err = authDFRequest(r); err != nil {
-		fmt.Fprintf(w, "[GET]/user/orgs, auth err %s\n", err.Error())
+		fmt.Fprintf(w, "[GET]/github.com/user/orgs, auth err %s\n", err.Error())
 		return
 	}
 
 	var userInfo map[string]string
 	if userInfo, err = getGithubInfoByDFUser(user); err != nil {
-		fmt.Fprintf(w, "[GET]/user/orgs, get user info err %s\n", err.Error())
+		fmt.Fprintf(w, "[GET]/github.com/user/orgs, get user info err %s\n", err.Error())
 		return
 	}
 
 	var orgs []Org
 	if orgs, err = GetOwnerOrgs(userInfo); err != nil {
-		fmt.Fprintf(w, "[GET]/user/orgs, get orgs info err %s\n", err.Error())
+		fmt.Fprintf(w, "[GET]/github.com/user/orgs, get orgs info err %s\n", err.Error())
 		return
 	}
 
@@ -155,15 +156,46 @@ func githubOrgOwnerReposHandler(w http.ResponseWriter, r *http.Request) {
 	for _, v := range orgs {
 		var l *Repos
 		if l, err = GetOrgReps(userInfo, v.Login); err != nil {
-			fmt.Printf("[GET]/user/orgs, get org %s info err %s\n", v.Login, err.Error())
+			fmt.Printf("[GET]/github.com/user/orgs, get org %s info err %s\n", v.Login, err.Error())
 			continue
 		}
 		repos = append(repos, *l...)
 	}
 
-	b, err := json.Marshal(repos)
+	newRepos := repos.Convert()
+	b, err := json.Marshal(newRepos)
 	if err != nil {
-		fmt.Fprintf(w, "[GET]/user/orgs, convert return err %s\n", string(b))
+		fmt.Fprintf(w, "[GET]/github.com/user/orgs, convert return err %s\n", string(b))
+		return
+	}
+
+	fmt.Fprintf(w, "%s", string(b))
+}
+
+func getGithubBranchHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	userName, repoName := ps.ByName("user"), ps.ByName("repo")
+	var user *api.User
+	var err error
+	if user, err = authDFRequest(r); err != nil {
+		fmt.Fprintf(w, "[GET]/github.com/users/%s/repos/%s, auth err %s\n", userName, repoName, err.Error())
+		return
+	}
+
+	var userInfo map[string]string
+	if userInfo, err = getGithubInfoByDFUser(user); err != nil {
+		fmt.Fprintf(w, "[GET]/github.com/users/%s/repos/%s, get user info err %s\n", userName, repoName, err.Error())
+		return
+	}
+
+	var tmp []map[string]interface{}
+	if tmp, err = GetRepoBranck(userInfo, userName, repoName); err != nil {
+		fmt.Fprintf(w, "[GET]/github.com/users/%s/repos/%s, request err %s\n", userName, repoName, err.Error())
+		return
+	}
+
+	b, err := json.Marshal(tmp)
+	if err != nil {
+		fmt.Fprintf(w, "[GET]/github.com/users/%s/repos/%s, convert return err %s\n", userName, repoName, err.Error())
 		return
 	}
 

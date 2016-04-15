@@ -64,6 +64,9 @@ func (p Post) create(s *api.Secret, token string) error {
 
 func (g Get) get(namespace, name string, token string) (*api.Secret, error) {
 	apiURL := setSecretURLWithName(namespace, name)
+	fmt.Println(" req ----> url ", apiURL)
+	fmt.Println(" req ----> token %#v\n", getTokenCredential(token))
+
 	b, err := g(apiURL, getTokenCredential(token)...)
 	if err != nil {
 		return nil, err
