@@ -3,12 +3,44 @@
 # Overview
 
 datafactory_oauth2 is a service based on oauth2.
-it is designed for datafoundry web to
+
+It is designed for datafoundry web to
 
 1. authorize datafoundry user to be able to access github.com api
 
 2. reduce github.com api return data for datafoundry api
 
+It use etcd as storage
+
+# Env Dependent
+
+|     Name                |   Description                   |  Must  |
+| ----------------------- | ------------------------------- | ------ |
+| GITHUB_REDIRECT_URL     |  oauth2 redirect url on github  |  true  |
+| GITHUB_CLIENT_ID        |  oauth2 cliend id on github     |  true  |
+| GITHUB_CLIENT_SECRET    |  oauth2 cliend secret on github |  true  |
+| DATAFACTORY_HOST_ADDR   |  datafoundry api server addr    |  true  |
+| ETCD_HTTP_ADDR          |  storage addr                   |  true  |
+| ETCD_HTTP_PORT          |  storage port                   |  true  |
+| ETCD_USER               |  storage user                   |  true  |
+| ETCD_PASSWORD           |  storage password               |  true  |
+    
+    
+     export GITHUB_REDIRECT_URL=http://oauth2-oauth.app.asiainfodata.com/v1/github-redirect
+     export GITHUB_CLIENT_ID=2369ed831a59847924b4
+     export GITHUB_CLIENT_SECRET=510bb29970fcd684d0e7136a5947f92710332c98
+     export DATAFACTORY_HOST_ADDR=https://lab.asiainfodata.com:8443
+        
+     export ETCD_HTTP_ADDR=http://etcdsystem.servicebroker.dataos.io
+     export ETCD_HTTP_PORT=2379
+     export ETCD_USER=asiainfoLDP
+     export ETCD_PASSWORD=6ED9BA74-75FD-4D1B-8916-842CB936AC1A
+    
+# Running datafactory_oauth2
+start.sh contains a default config to quickly run this service
+
+    GO15VENDOREXPERIMENT=1 go build && ./start.sh
+    
 # API
 
 # Oauth Callback 
