@@ -8,9 +8,9 @@ It is designed for datafoundry web to
 
 1. authorize datafoundry user to be able to access github.com api
 
-2. reduce github.com api return data for datafoundry api
+2. reduce data from github api for datafoundry web
 
-It use etcd as storage
+datafactory_oauth2 need etcd storage
 
 # Env Dependent
 
@@ -46,6 +46,13 @@ start.sh contains a default config to quickly run this service
 # Oauth Callback 
 
 datafoundry web  --request--> Third Oauth --redirect--> datafactory_oauth2
+If success, it will generate a secret in datafoundry namespcae with a name {namespace}-{user}-{third-oauth-name} like oauth-panxy-github.
+
+    > oc get secret 
+    
+    NAME                            TYPE      DATA      AGE
+    oauth-panxy-github   Opaque    1         4m
+    
 
 oauth2 document [https://developer.github.com/v3/](https://developer.github.com/v3/)
 
