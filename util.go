@@ -126,3 +126,21 @@ func getTokenCredential(token string) []string {
 func generateName(namespace, username string) string {
 	return fmt.Sprintf("%s-%s-github", namespace, username)
 }
+
+func retHttpCodef(code int ,w http.ResponseWriter, format string, a ...interface{}) {
+	if code != 200 {
+		w.WriteHeader(code)
+	}
+
+	fmt.Fprintf(w, format, a...)
+	return
+}
+
+func retHttpCode(code int ,w http.ResponseWriter, a ...interface{}) {
+	if code != 200 {
+		w.WriteHeader(code)
+	}
+
+	fmt.Fprint(w, a...)
+	return
+}

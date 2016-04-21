@@ -4,12 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	api "github.com/openshift/origin/pkg/user/api/v1"
-	"net/http"
 	"strings"
 )
 
-func authDFRequest(r *http.Request) (*api.User, error) {
-	token := r.Header.Get("Authorization")
+func authDFToken(token string) (*api.User, error) {
 	b, err := get(DF_API_Auth, "Authorization", token)
 	if err != nil {
 		return nil, err

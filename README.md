@@ -64,7 +64,6 @@ oauth2 document [https://developer.github.com/v3/](https://developer.github.com/
 |     Name      |     Type      |   Description               |  Must  |
 | ------------- | ------------- | --------------------------- | ------ |
 | namespace     |     string    |  datafoundry  namespace     |  true  |
-| user          |     string    |  datafoundry  user          |  true  |
 | bearer        |     string    |  datafoundry  bearer token  |  true  |
 
 **Param**

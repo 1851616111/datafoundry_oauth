@@ -106,9 +106,29 @@ func createSecret(o *secretOptions) error {
 }
 
 func getSecret(o *secretOptions) (*api.Secret, error) {
-
 	return get.get(o.NameSpace, o.SecretName, o.DatafactoryToken)
 }
+
+func upsertSecret(option *secretOptions) error {
+	secret, err := getSecret(option)
+	if err != nil {
+		if NotFount(err) {
+			if err := createSecret(option); err != nil {
+				return err
+			}
+			return nil
+		}
+
+		return err
+	}
+
+	if err := updateSecret(secret, option); err != nil {
+		return  err
+	}
+
+	return nil
+}
+
 
 func updateSecret(s *api.Secret, o *secretOptions) error {
 	s.Data[PasswordSecret] = []byte(o.GitHubToken)

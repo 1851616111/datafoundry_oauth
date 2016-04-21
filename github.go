@@ -86,7 +86,7 @@ func Exchange(code string) (*oauth2.Token, error) {
 	return tokenConfig.(*Github).Exchange(oauth2.NoContext, code)
 }
 
-func getGithubInfoByDFUser(user *api.User) (map[string]string, error) {
+func getGithubInfo(user *api.User) (map[string]string, error) {
 	key := getUserKey(user.Name, "github.com")
 	info, err := db.get(key, false, false)
 	if err != nil {
