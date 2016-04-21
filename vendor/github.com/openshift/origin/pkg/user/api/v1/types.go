@@ -1,8 +1,8 @@
 package v1
 
 import (
-	"k8s.io/kubernetes/pkg/api/unversioned"
 	kapi "k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/api/unversioned"
 )
 
 type User struct {

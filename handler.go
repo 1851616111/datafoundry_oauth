@@ -36,8 +36,6 @@ func githubHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	}
 	userInfo["user"] = user.Name
 
-
-
 	raw, err := queryRequestURI(r)
 	if err != nil {
 		retHttpCodef(400, w, "parse request url %s err %s", r.RequestURI, err.Error())
@@ -55,7 +53,7 @@ func githubHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 
 	res, err := http.PostForm("https://github.com/login/oauth/access_token", retriveTokenURL)
 	if err != nil {
-		 retHttpCodef(400, w, "retrive token err %s", err.Error())
+		retHttpCodef(400, w, "retrive token err %s", err.Error())
 		return
 	}
 
@@ -76,7 +74,7 @@ func githubHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 
 	key := fmt.Sprintf("/oauth/namespaces/%s/%s/%s", userInfo["namespace"], userInfo["user"], userInfo["source"])
 	if err := db.set(key, userInfo); err != nil {
-		 retHttpCodef(400, w, "store namespace %s err %s", userInfo["namespace"], err.Error())
+		retHttpCodef(400, w, "store namespace %s err %s", userInfo["namespace"], err.Error())
 		return
 	}
 	go syncOauthUser(db, userInfo)
@@ -173,7 +171,7 @@ func getGithubBranchHandler(w http.ResponseWriter, r *http.Request, ps httproute
 	var err error
 	token := r.Header.Get("Authorization")
 	if user, err = authDFToken(token); err != nil {
-		retHttpCodef(401, w, "auth err %s\n",  err.Error())
+		retHttpCodef(401, w, "auth err %s\n", err.Error())
 		return
 	}
 
@@ -211,7 +209,7 @@ func setSecretOption(info map[string]string) *secretOptions {
 	return &secretOptions{
 		NameSpace:        info["namespace"],
 		UserName:         info["user"],
-		SecretName:       generateName(info["namespace"], info["user"]),
+		SecretName:       generateName(info["user"]),
 		DatafactoryToken: info["bearer"],
 		GitHubToken:      info["credential_value"],
 	}

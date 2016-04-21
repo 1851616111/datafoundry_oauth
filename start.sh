@@ -1,10 +1,10 @@
-os::getEnv() {
+os_getEnv() {
     key=$1
     pair=`env | grep ${key}`
     echo ${pair#*$key=}
 }
 
-os:export::Develop::Env() {
+os_export_Develop_Env() {
 #    export http_proxy=http://proxy.asiainfo.com:8080
     export GITHUB_REDIRECT_URL=http://oauth2-oauth.app.asiainfodata.com/v1/github-redirect
     export GITHUB_CLIENT_ID=2369ed831a59847924b4
@@ -13,10 +13,10 @@ os:export::Develop::Env() {
 
 #export DF_ENV_OAUTH_DEVELOP=true
 
-Dev=`os::getEnv DF_ENV_OAUTH_DEVELOP`
+Dev=`os_getEnv DF_ENV_OAUTH_DEVELOP`
 
 if [ "$Dev" == "true" ]||[ "$Dev" == "" ];then
-    os:export::Develop::Env
+    os_export_Develop_Env
 fi
 
 export DATAFACTORY_HOST_ADDR=https://lab.asiainfodata.com:8443

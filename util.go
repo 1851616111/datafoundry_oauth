@@ -123,11 +123,11 @@ func getTokenCredential(token string) []string {
 	return []string{"Authorization", fmt.Sprintf("Bearer %s", token)}
 }
 
-func generateName(namespace, username string) string {
-	return fmt.Sprintf("%s-%s-github", namespace, username)
+func generateName(username string) string {
+	return fmt.Sprintf("%s-github", username)
 }
 
-func retHttpCodef(code int ,w http.ResponseWriter, format string, a ...interface{}) {
+func retHttpCodef(code int, w http.ResponseWriter, format string, a ...interface{}) {
 	if code != 200 {
 		w.WriteHeader(code)
 	}
@@ -136,7 +136,7 @@ func retHttpCodef(code int ,w http.ResponseWriter, format string, a ...interface
 	return
 }
 
-func retHttpCode(code int ,w http.ResponseWriter, a ...interface{}) {
+func retHttpCode(code int, w http.ResponseWriter, a ...interface{}) {
 	if code != 200 {
 		w.WriteHeader(code)
 	}

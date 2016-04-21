@@ -9,6 +9,6 @@ ENV SERVICE_NAME=datafactory_oauth2
 
 RUN GO15VENDOREXPERIMENT=1 go build
 
-ENTRYPOINT ["/go/src/github.com/asiainfoLDP/datafactory_oauth2/start.sh"]
+ENTRYPOINT ["/bin/sh", "-c", "/go/src/github.com/asiainfoLDP/datafactory_oauth2/start.sh"]
 
 
