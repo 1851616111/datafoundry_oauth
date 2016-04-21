@@ -15,7 +15,7 @@ os_export_Develop_Env() {
 
 Dev=`os_getEnv DF_ENV_OAUTH_DEVELOP`
 
-if [ "$Dev" == "true" ]||[ "$Dev" == "" ];then
+if [ "$Dev" == "" ];then
     os_export_Develop_Env
 fi
 
