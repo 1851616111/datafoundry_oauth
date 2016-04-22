@@ -58,21 +58,15 @@ oauth2 document [https://developer.github.com/v3/](https://developer.github.com/
 
     
     GET     /v1/github-redirect
-
-**Header**
-  
-|     Name      |     Type      |   Description               |  Must  |
-| ------------- | ------------- | --------------------------- | ------ |
-| namespace     |     string    |  datafoundry  namespace     |  true  |
-| bearer        |     string    |  datafoundry  bearer token  |  true  |
-
+    
 **Param**
   
-|     Name      |     Type      |  Description    |  Must  |
-| ------------- | ------------- | --------------- | ------ |
-| code          |     string    |  callback code  |  true  |
-| state         |     string    |  callback code  |  true  |
-
+|     Name      |     Type      |  Description               |  Must  |
+| ------------- | ------------- | -------------------------  | ------ |
+| namespace     |     string    |  datafoundry namespace     |  true  |
+| bearer        |     string    |  datafoundry bearer token  |  true  |
+| code          |     string    |  github callback code      |  true  |
+| state         |     string    |  github callback code      |  true  |
 
 **Reponse**
     

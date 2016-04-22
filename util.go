@@ -30,24 +30,6 @@ func httpAddrMaker(addr string) string {
 	return addr
 }
 
-func headers(r *http.Request, keys ...string) map[string]string {
-	m := map[string]string{}
-	for i := 0; i < len(keys); i++ {
-		if value := r.Header.Get(keys[i]); value != "" {
-			m[keys[i]] = value
-		}
-	}
-
-	return m
-}
-
-func printConfig(c *storeConfig) {
-	fmt.Printf("[ETCD_HTTP_ADDR]=%s\n", c.Addr)
-	fmt.Printf("[ETCD_HTTP_PORT]=%s\n", c.Port)
-	fmt.Printf("[ETCD_USER]=%s\n", c.User)
-	fmt.Printf("[ETCD_PASSWOR]=%s\n", c.Passwd)
-}
-
 func httpPost(url string, body []byte, credential ...string) ([]byte, error) {
 	return httpAction("POST", url, body, credential...)
 }
@@ -119,6 +101,7 @@ func httpAction(method, url string, body []byte, credential ...string) ([]byte, 
 
 	return b, nil
 }
+
 func getTokenCredential(token string) []string {
 	return []string{"Authorization", fmt.Sprintf("Bearer %s", token)}
 }
@@ -144,3 +127,4 @@ func retHttpCode(code int, w http.ResponseWriter, a ...interface{}) {
 	fmt.Fprint(w, a...)
 	return
 }
+

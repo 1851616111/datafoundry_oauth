@@ -20,21 +20,31 @@ const (
 
 //curl http://127.0.0.1:9443/v1/github-redirect?code=4fda33093c9fc12711f1&\state=ccc
 //curl http://etcdsystem.servicebroker.dataos.io:2379/v2/keys/oauth/namespace/  -u asiainfoLDP:6ED9BA74-75FD-4D1B-8916-842CB936AC1A
-//curl -H "namespace:namespace123"  -H "bearer:xxxxxxxxxxxxxxxx" http://127.0.0.1:9443/v1/github-redirect?code=4fda33093c9fc12711f1\&state=ccc
-func githubHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	userInfo := headers(r, "namespace", "bearer")
-	if len(userInfo) != 2 {
-		retHttpCode(400, w, "request header not contains [namespace bearer]\n")
+//curl http://127.0.0.1:9443/v1/github-redirect?code=4fda33093c9fc12711f1\&state=ccc?namespace=auth\&bearer=xxxxxxxxxxxxxxxxxxxxxxxxx
+func githubHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	r.ParseForm()
+	var ns, bearer string
+	if ns = r.FormValue("namespace"); strings.TrimSpace(ns) == "" {
+		retHttpCode(400, w, "param namespace must not be nil.\n")
+		return
+	}
+	if bearer = r.FormValue("bearer"); strings.TrimSpace(bearer) == "" {
+		retHttpCode(400, w, "param bearer must not be nil.\n")
 		return
 	}
 
 	var user *api.User
 	var err error
-	if user, err = authDFToken("bearer " + userInfo["bearer"]); err != nil {
-		retHttpCodef(401, w, "auth err %s\n", err.Error())
+	if user, err = authDFToken("bearer " + bearer); err != nil {
+		retHttpCode(401, w, "unauthorized\n")
 		return
 	}
-	userInfo["user"] = user.Name
+
+	userInfo := map[string]string{
+		"namespace": ns,
+		"bearer":    bearer,
+		"user":      user.Name,
+	}
 
 	raw, err := queryRequestURI(r)
 	if err != nil {
