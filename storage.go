@@ -9,7 +9,6 @@ import (
 )
 
 const (
-	EtcdNamespaceRegistry = "/oauth/namespaces"
 	EtcdUserRegistry      = "/oauth/users"
 )
 

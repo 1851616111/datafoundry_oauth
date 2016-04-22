@@ -9,9 +9,6 @@ import (
 
 var (
 	tokenConfig Config
-	//RedirectUrl  = "http://oauth2-oauth.app.asiainfodata.com/v1/github-redirect"
-	//ClientID     = "2369ed831a59847924b4"
-	//ClientSecret = "510bb29970fcd684d0e7136a5947f92710332c98"
 	GithubRedirectUrl, GithubClientID, GithubClientSecret string
 	db                                                    Store
 	DFHost                                                string
@@ -19,9 +16,11 @@ var (
 )
 
 func init() {
+	initEnvs()
+	initOauthConfig()
+
 	initStorage()
 	initOauth2Plugin()
-	initOauthConfig()
 	initDFHost()
 	initAPI()
 }
@@ -43,7 +42,8 @@ func initOauthConfig() {
 	var err error
 	tokenConfig, err = NewGitHub(GithubClientID, GithubClientSecret, GithubRedirectUrl, []string{"repo", "user:email"})
 	if err != nil {
-		fmt.Printf("oauth init fail %s", err.Error())
+		fmt.Errorf("oauth init fail %s\n", err.Error())
+
 	}
 
 	fmt.Println("oauth config init success")
@@ -51,15 +51,13 @@ func initOauthConfig() {
 
 func initStorage() {
 	c := storeConfig{
-		Addr:   httpAddrMaker(getEnv("ETCD_HTTP_ADDR", true)),
-		Port:   getEnv("ETCD_HTTP_PORT", true),
-		User:   getEnv("ETCD_USER", true),
-		Passwd: getEnv("ETCD_PASSWORD", true),
+		Addr:   httpAddrMaker(EtcdStorageEnv.Get("ETCD_HTTP_ADDR", nil)),
+		Port:   EtcdStorageEnv.Get("ETCD_HTTP_PORT", nil),
+		User:   EtcdStorageEnv.Get("ETCD_USER", nil),
+		Passwd: EtcdStorageEnv.Get("ETCD_PASSWORD", nil),
 	}
 
-	printConfig(&c)
 	db = c.newClient()
-
 	fmt.Println("oauth init storage config success")
 }
 
@@ -68,17 +66,35 @@ func initOauth2Plugin() {
 }
 
 func initGithubPlugin() {
-	GithubRedirectUrl = getEnv("GITHUB_REDIRECT_URL", true)
-	GithubClientID = getEnv("GITHUB_CLIENT_ID", true)
-	GithubClientSecret = getEnv("GITHUB_CLIENT_SECRET", true)
+	GithubRedirectUrl = GithubApplicationEnv.Get("GITHUB_REDIRECT_URL", nil)
+	GithubClientID = GithubApplicationEnv.Get("GITHUB_CLIENT_ID", nil)
+	GithubClientSecret = GithubApplicationEnv.Get("GITHUB_CLIENT_SECRET", nil)
 }
 
 func initDFHost() {
-	DFHost = getEnv("DATAFACTORY_HOST_ADDR", true)
+	DFHost = DatafoundryEnv.Get("DATAFACTORY_HOST_ADDR", nil)
 }
 
 func initAPI() {
 	DF_API_Auth = DFHost + "/oapi/v1/users/~"
+}
+
+func initEnvs() {
+	envNotNil := func(k string) {
+		fmt.Errorf("[Env] %s must not be nil.", k)
+	}
+
+	EtcdStorageEnv.Init()
+	EtcdStorageEnv.Print()
+	EtcdStorageEnv.Validate(envNotNil)
+
+	GithubApplicationEnv.Init()
+	GithubApplicationEnv.Print()
+	GithubApplicationEnv.Validate(envNotNil)
+
+	DatafoundryEnv.Init()
+	DatafoundryEnv.Print()
+	DatafoundryEnv.Validate(envNotNil)
 }
 
 //https://github.com/login/oauth/authorize?client_id=2369ed831a59847924b4&scope=repo,user:email&state=ccc&redirect_uri=http://oauth2-oauth.app.asiainfodata.com/v1/github-redirect

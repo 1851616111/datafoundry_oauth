@@ -5,18 +5,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 )
 
-func getEnv(key string, required bool) string {
-	value := os.Getenv(key)
-	if value == "" && required {
-		panic("no exist env " + key)
-	}
 
-	return value
-}
 
 func httpAddrMaker(addr string) string {
 	if strings.HasSuffix(addr, "/") {
@@ -127,4 +119,3 @@ func retHttpCode(code int, w http.ResponseWriter, a ...interface{}) {
 	fmt.Fprint(w, a...)
 	return
 }
-
