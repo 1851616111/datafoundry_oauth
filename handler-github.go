@@ -35,7 +35,7 @@ func githubHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 
 	var user *api.User
 	var err error
-	if user, err = authDFToken("bearer " + bearer); err != nil {
+	if user, err = authDF("bearer " + bearer); err != nil {
 		retHttpCode(401, w, "unauthorized\n")
 		return
 	}
@@ -107,7 +107,7 @@ func githubUserOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httpr
 	var user *api.User
 	var err error
 	token := r.Header.Get("Authorization")
-	if user, err = authDFToken(token); err != nil {
+	if user, err = authDF(token); err != nil {
 		retHttpCodef(401, w, "auth err %s\n", err.Error())
 		return
 	}
@@ -138,7 +138,7 @@ func githubOrgOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httpro
 	var user *api.User
 	var err error
 	token := r.Header.Get("Authorization")
-	if user, err = authDFToken(token); err != nil {
+	if user, err = authDF(token); err != nil {
 		retHttpCodef(401, w, "auth err %s\n", err.Error())
 		return
 	}
@@ -180,7 +180,7 @@ func getGithubBranchHandler(w http.ResponseWriter, r *http.Request, ps httproute
 	var user *api.User
 	var err error
 	token := r.Header.Get("Authorization")
-	if user, err = authDFToken(token); err != nil {
+	if user, err = authDF(token); err != nil {
 		retHttpCodef(401, w, "auth err %s\n", err.Error())
 		return
 	}

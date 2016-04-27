@@ -8,8 +8,6 @@ import (
 	"strings"
 )
 
-
-
 func httpAddrMaker(addr string) string {
 	if strings.HasSuffix(addr, "/") {
 		addr = strings.TrimRight(addr, "/")

@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	EtcdUserRegistry      = "/oauth/users"
+	EtcdUserRegistry = "/oauth/users"
 )
 
 type storeConfig struct {

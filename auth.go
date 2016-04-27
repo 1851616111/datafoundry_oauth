@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func authDFToken(token string) (*api.User, error) {
+func authDF(token string) (*api.User, error) {
 	b, err := get(DF_API_Auth, "Authorization", token)
 	if err != nil {
 		return nil, err

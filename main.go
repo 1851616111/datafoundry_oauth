@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	tokenConfig Config
+	tokenConfig                                           Config
 	GithubRedirectUrl, GithubClientID, GithubClientSecret string
 	db                                                    Store
 	DFHost                                                string
@@ -26,13 +26,14 @@ func init() {
 }
 
 func main() {
-
 	router := router.New()
 
 	router.GET("/v1/github-redirect", githubHandler)
 	router.GET("/v1/repos/github/owner", githubUserOwnerReposHandler)
 	router.GET("/v1/repos/github/orgs", githubOrgOwnerReposHandler)
 	router.GET("/v1/repos/github/users/:user/repos/:repo", getGithubBranchHandler)
+
+	router.POST("/v1/gitlab", gitlabHandler)
 
 	log.Fatal(http.ListenAndServe(":9443", router))
 
