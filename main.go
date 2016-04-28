@@ -29,11 +29,12 @@ func main() {
 	router := router.New()
 
 	router.GET("/v1/github-redirect", githubHandler)
-	router.GET("/v1/repos/github/owner", githubUserOwnerReposHandler)
-	router.GET("/v1/repos/github/orgs", githubOrgOwnerReposHandler)
+	router.GET("/v1/repos/github/owner", githubOwnerReposHandler)
+	router.GET("/v1/repos/github/orgs", githubOrgReposHandler)
 	router.GET("/v1/repos/github/users/:user/repos/:repo", getGithubBranchHandler)
 
 	router.POST("/v1/gitlab", gitlabHandler)
+	router.GET("/v1/gitlab/repos/:user", gitLabOwnerReposHandler)
 
 	log.Fatal(http.ListenAndServe(":9443", router))
 

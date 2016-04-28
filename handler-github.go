@@ -103,7 +103,7 @@ func githubHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	retHttpCode(200, w, "ok")
 }
 
-func githubUserOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var user *api.User
 	var err error
 	token := r.Header.Get("Authorization")
@@ -134,7 +134,7 @@ func githubUserOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httpr
 	retHttpCodef(200, w, "%s", string(b))
 }
 
-func githubOrgOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func githubOrgReposHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var user *api.User
 	var err error
 	token := r.Header.Get("Authorization")

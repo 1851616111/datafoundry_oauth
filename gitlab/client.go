@@ -3,13 +3,15 @@ package gitlab
 import "fmt"
 
 const (
-	Gitlab_Credential_Key = "PRIVATE-TOKEN"
+	Gitlab_Credential_Key       = "PRIVATE-TOKEN"
+	GitLab_Api_Url_Path_User    = "/api/v3/user"
+	GitLab_Api_Url_Path_Project = "/api/v3//projects/owned"
 )
 
 type Client interface {
 	UserInterface
 	//Groups
-	//Projects
+	ProjectInterface
 	//Branches
 	//DeployKeys
 }
@@ -19,7 +21,7 @@ type UserInterface interface {
 }
 
 func (c *HttpFactory) User(host, privateToken string) Users {
-	return c.newClient(host, "/api/v3/user", privateToken)
+	return c.newClient(host, GitLab_Api_Url_Path_User, privateToken)
 }
 
 type Users interface {
@@ -48,17 +50,25 @@ func (r *RestClient) ListGroups() ([]Group, error) {
 	return groups, nil
 }
 
+type ProjectInterface interface {
+	Project(host, privateToken string) Projects
+}
+
+func (c *HttpFactory) Project(host, privateToken string) Projects {
+	return c.newClient(host, GitLab_Api_Url_Path_Project, privateToken)
+}
+
 type Projects interface {
 	ListProjects() ([]Project, error)
 }
 
 func (r *RestClient) ListProjects() ([]Project, error) {
-	projects := []Project{}
+	projects := new([]Project)
 	if err := r.Client.GetJson(projects, r.Url, r.Credential.Key, r.Credential.Value); err != nil {
 		return nil, err
 	}
 
-	return projects, nil
+	return *projects, nil
 }
 
 type Branches interface {

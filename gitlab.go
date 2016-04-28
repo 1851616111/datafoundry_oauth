@@ -12,8 +12,6 @@ type gitlabBindOption struct {
 	Host         string `json:"host"`
 	User         string `json:"user"`
 	PrivateToken string `json:"private_token"`
-	Namespace    string `json:"namespace"`
-	Bearer       string `json:"bearer"`
 }
 
 type gitlabDumpling struct {
