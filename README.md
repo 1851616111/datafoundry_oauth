@@ -162,3 +162,20 @@ oauth2 document [https://developer.github.com/v3/](https://developer.github.com/
             "name": "releasev1.8"
         }
     ]
+    
+    
+# Authorize gitlab deploy 
+
+    POST /v1/gitlab/authorize/deploy
+
+**Description**
+
+    It is designed for datafoundry(DF) user to access private gitlab service.
+    It needs to identify different DF Address(dev, release, product, public), if they use the same db storage.
+    In each DF Address, it is designed than DF user can add several private gitlab, but only one gitlab user are allowed each gitlab.
+        
+**Authorization**
+
+    bearer TOKEN 
+    
+    

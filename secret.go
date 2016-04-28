@@ -78,7 +78,7 @@ func (g Get) get(namespace, name string, token string) (*api.Secret, error) {
 	return secret, nil
 }
 
-func (o *secretOptions) NewBasicAuthSecret() *api.Secret {
+func (o *SecretTokenOptions) NewSecret() *api.Secret {
 	secret := &api.Secret{}
 	secret.Kind = "Secret"
 	secret.APIVersion = "v1"
@@ -97,17 +97,64 @@ func (o *secretOptions) NewBasicAuthSecret() *api.Secret {
 	return secret
 }
 
-func createSecret(o *secretOptions) error {
-	secret := o.NewBasicAuthSecret()
+func (o *SecretSSHOptions) NewSecret() *api.Secret {
+	secret := &api.Secret{}
+	secret.Kind = "Secret"
+	secret.APIVersion = "v1"
+	secret.Name = o.SecretName
+	secret.Namespace = o.NameSpace
+	secret.Type = api.SecretTypeOpaque
 
-	return post.create(secret, o.DatafactoryToken)
+	secret.Labels = map[string]string{
+		SecretLabel: o.SecretName,
+	}
+
+	secret.Data = map[string][]byte{
+		"ssh-privatekey": []byte(o.PrivateKey),
+	}
+
+	return secret
 }
 
-func getSecret(o *secretOptions) (*api.Secret, error) {
-	return get.get(o.NameSpace, o.SecretName, o.DatafactoryToken)
+type SecretOption interface {
+	NewSecret() *api.Secret
+	GetDFToken() string
+	GetDFNamespace() string
+	GetSecretName() string
 }
 
-func upsertSecret(option *secretOptions) error {
+func (o *SecretSSHOptions) GetDFToken() string {
+	return o.DatafactoryToken
+}
+func (o *SecretTokenOptions) GetDFToken() string {
+	return o.DatafactoryToken
+}
+
+func (o *SecretSSHOptions) GetDFNamespace() string {
+	return o.NameSpace
+}
+func (o *SecretTokenOptions) GetDFNamespace() string {
+	return o.NameSpace
+}
+
+func (o *SecretSSHOptions) GetSecretName() string {
+	return o.SecretName
+}
+func (o *SecretTokenOptions) GetSecretName() string {
+	return o.SecretName
+}
+
+func createSecret(o SecretOption) error {
+	secret := o.NewSecret()
+
+	return post.create(secret, o.GetDFToken())
+}
+
+func getSecret(o SecretOption) (*api.Secret, error) {
+	return get.get(o.GetDFNamespace(), o.GetSecretName(), o.GetDFToken())
+}
+
+func upsertSecret(option *SecretOption) error {
 	secret, err := getSecret(option)
 	if err != nil {
 		if NotFount(err) {
@@ -127,12 +174,12 @@ func upsertSecret(option *secretOptions) error {
 	return nil
 }
 
-func updateSecret(s *api.Secret, o *secretOptions) error {
+func updateSecret(s *api.Secret, o *SecretTokenOptions) error {
 	s.Data[PasswordSecret] = []byte(o.GitHubToken)
 	return put.update(s, o.DatafactoryToken)
 }
 
-type secretOptions struct {
+type SecretTokenOptions struct {
 	NameSpace  string
 	UserName   string
 	SecretName string
@@ -141,7 +188,16 @@ type secretOptions struct {
 	GitHubToken      string
 }
 
-func (o *secretOptions) validate() error {
+type SecretSSHOptions struct {
+	NameSpace  string
+	UserName   string
+	SecretName string
+
+	DatafactoryToken string
+	PrivateKey       string
+}
+
+func (o *SecretTokenOptions) validate() error {
 	if len(o.NameSpace) == 0 {
 		return errors.New("secret option namespace is null")
 	}
@@ -160,6 +216,30 @@ func (o *secretOptions) validate() error {
 
 	if len(o.GitHubToken) == 0 {
 		return errors.New("secret option github token is null")
+	}
+
+	return nil
+}
+
+func (o *SecretSSHOptions) validate() error {
+	if len(o.NameSpace) == 0 {
+		return errors.New("secret option namespace is null")
+	}
+
+	if len(o.UserName) == 0 {
+		return errors.New("secret option user is null")
+	}
+
+	if len(o.SecretName) == 0 {
+		return errors.New("secret option secret name is null")
+	}
+
+	if len(o.DatafactoryToken) == 0 {
+		return errors.New("secret option df token is null")
+	}
+
+	if len(o.PrivateKey) == 0 {
+		return errors.New("secret option gitlab PrivateKey is null")
 	}
 
 	return nil

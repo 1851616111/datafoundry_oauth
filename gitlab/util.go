@@ -64,3 +64,14 @@ func ConverOrgProjects(pl []Project) []NewOrgProjectList {
 	return npl
 
 }
+
+func FilterDeployKeysByTitle(dks []DeployKey, filter string, filterFn func(title, filter string) bool) []DeployKey {
+	ndks := []DeployKey{}
+	for _, v := range dks {
+		if filterFn(v.Title, filter) {
+			ndks = append(ndks, v)
+		}
+	}
+
+	return ndks
+}

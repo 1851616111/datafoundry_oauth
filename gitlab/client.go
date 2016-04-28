@@ -5,7 +5,8 @@ import "fmt"
 const (
 	Gitlab_Credential_Key       = "PRIVATE-TOKEN"
 	GitLab_Api_Url_Path_User    = "/api/v3/user"
-	GitLab_Api_Url_Path_Project = "/api/v3//projects/owned"
+	GitLab_Api_Url_Path_Project = "/api/v3/projects/owned"
+	GitLab_Api_Url_Path_Keys    = "/api/v3/projects/%s/keys"
 )
 
 type Client interface {
@@ -13,7 +14,7 @@ type Client interface {
 	//Groups
 	ProjectInterface
 	//Branches
-	//DeployKeys
+	DeployKeyInterface
 }
 
 type UserInterface interface {
@@ -86,9 +87,17 @@ func (r *RestClient) ListBranches(projectId int) ([]Branch, error) {
 	return branches, nil
 }
 
+type DeployKeyInterface interface {
+	DeployKey(host, privateToken string) DeployKeys
+}
+
+func (c *HttpFactory) DeployKey(host, privateToken string) DeployKeys {
+	return c.newClient(host, GitLab_Api_Url_Path_Keys, privateToken)
+}
+
 type DeployKeys interface {
 	ListKeys() ([]DeployKey, error)
-	CreateKey() error
+	CreateKey(option *NewDeployKeyOption) error
 	DeleteKey(id int) error
 }
 

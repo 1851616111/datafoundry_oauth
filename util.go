@@ -96,8 +96,12 @@ func getTokenCredential(token string) []string {
 	return []string{"Authorization", fmt.Sprintf("Bearer %s", token)}
 }
 
-func generateName(username string) string {
+func generateGithubName(username string) string {
 	return fmt.Sprintf("%s-github", username)
+}
+
+func generateGitlabName(username, gitlabHost string) string {
+	return fmt.Sprintf("%s-gitlab-%s", username, gitlabHost)
 }
 
 func retHttpCodef(code int, w http.ResponseWriter, format string, a ...interface{}) {
@@ -116,4 +120,13 @@ func retHttpCode(code int, w http.ResponseWriter, a ...interface{}) {
 
 	fmt.Fprint(w, a...)
 	return
+}
+
+type deployKey struct {
+	Private string `json:"private_key"`
+	Public  string `json:"public_key"`
+}
+
+func stripBearToken(authValue string) string {
+	return strings.TrimSpace(strings.TrimLeft(authValue, "bearer "))
 }
