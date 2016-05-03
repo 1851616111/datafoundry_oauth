@@ -8,10 +8,15 @@ import (
 	"net/http"
 )
 
-type gitlabBindOption struct {
+type gitLabInfo struct {
 	Host         string `json:"host"`
 	User         string `json:"user"`
 	PrivateToken string `json:"private_token"`
+}
+
+type gitLabBindInfo struct {
+	Host string `json:"host"`
+	Id   int    `json:"project_id"`
 }
 
 type gitlabDumpling struct {

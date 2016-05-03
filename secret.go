@@ -8,10 +8,11 @@ import (
 )
 
 const (
-	PasswordSecret = "password"
-	SecretLabel    = "openshift.io.oauth/github"
-	SecretsURL     = "/api/v1/namespaces/%s/secrets"
-	SecretURL      = "/api/v1/namespaces/%s/secrets/%s"
+	PasswordSecret    = "password"
+	GithubSecretLabel = "openshift.io.oauth/github"
+	GitLabSecretLabel = "openshift.io.oauth/gitlab"
+	SecretsURL        = "/api/v1/namespaces/%s/secrets"
+	SecretURL         = "/api/v1/namespaces/%s/secrets/%s"
 )
 
 var (
@@ -39,7 +40,8 @@ func (p Put) update(s *api.Secret, token string) error {
 	}
 
 	apiURL := setSecretURLWithName(s.Namespace, s.Name)
-	if _, err := p(apiURL, body, getTokenCredential(token)...); err != nil {
+
+	if _, err := p(apiURL, body, "Authorization", fmt.Sprintf("Bearer %s", token)); err != nil {
 		return err
 	}
 
@@ -54,7 +56,7 @@ func (p Post) create(s *api.Secret, token string) error {
 
 	apiURL := setSecretURL(s.Namespace)
 
-	if _, err := p(apiURL, body, getTokenCredential(token)...); err != nil {
+	if _, err := p(apiURL, body, "Authorization", fmt.Sprintf("Bearer %s", token)); err != nil {
 		return err
 
 	}
@@ -64,8 +66,7 @@ func (p Post) create(s *api.Secret, token string) error {
 
 func (g Get) get(namespace, name string, token string) (*api.Secret, error) {
 	apiURL := setSecretURLWithName(namespace, name)
-
-	b, err := g(apiURL, getTokenCredential(token)...)
+	b, err := g(apiURL, "Authorization", fmt.Sprintf("Bearer %s", token))
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +88,7 @@ func (o *SecretTokenOptions) NewSecret() *api.Secret {
 	secret.Type = api.SecretTypeOpaque
 
 	secret.Labels = map[string]string{
-		SecretLabel: o.SecretName,
+		GithubSecretLabel: o.SecretName,
 	}
 
 	secret.Data = map[string][]byte{
@@ -106,7 +107,7 @@ func (o *SecretSSHOptions) NewSecret() *api.Secret {
 	secret.Type = api.SecretTypeOpaque
 
 	secret.Labels = map[string]string{
-		SecretLabel: o.SecretName,
+		GitLabSecretLabel: o.SecretName,
 	}
 
 	secret.Data = map[string][]byte{
@@ -121,11 +122,20 @@ type SecretOption interface {
 	GetDFToken() string
 	GetDFNamespace() string
 	GetSecretName() string
+
+	IsSSHSecret() bool
+	GetPrivateKey() string
+
+	IsTokenSecret() bool
+	GetToken() string
+
+	Validate() error
 }
 
 func (o *SecretSSHOptions) GetDFToken() string {
 	return o.DatafactoryToken
 }
+
 func (o *SecretTokenOptions) GetDFToken() string {
 	return o.DatafactoryToken
 }
@@ -133,6 +143,7 @@ func (o *SecretTokenOptions) GetDFToken() string {
 func (o *SecretSSHOptions) GetDFNamespace() string {
 	return o.NameSpace
 }
+
 func (o *SecretTokenOptions) GetDFNamespace() string {
 	return o.NameSpace
 }
@@ -140,13 +151,45 @@ func (o *SecretTokenOptions) GetDFNamespace() string {
 func (o *SecretSSHOptions) GetSecretName() string {
 	return o.SecretName
 }
+
 func (o *SecretTokenOptions) GetSecretName() string {
 	return o.SecretName
 }
 
+func (o *SecretSSHOptions) IsSSHSecret() bool {
+	return true
+}
+
+func (o *SecretTokenOptions) IsSSHSecret() bool {
+	return false
+}
+
+func (o *SecretSSHOptions) IsTokenSecret() bool {
+	return false
+}
+
+func (o *SecretTokenOptions) IsTokenSecret() bool {
+	return true
+}
+
+func (o *SecretSSHOptions) GetPrivateKey() string {
+	return o.PrivateKey
+}
+
+func (o *SecretTokenOptions) GetPrivateKey() string {
+	return ""
+}
+
+func (o *SecretSSHOptions) GetToken() string {
+	return ""
+}
+
+func (o *SecretTokenOptions) GetToken() string {
+	return o.GitHubToken
+}
+
 func createSecret(o SecretOption) error {
 	secret := o.NewSecret()
-
 	return post.create(secret, o.GetDFToken())
 }
 
@@ -154,7 +197,7 @@ func getSecret(o SecretOption) (*api.Secret, error) {
 	return get.get(o.GetDFNamespace(), o.GetSecretName(), o.GetDFToken())
 }
 
-func upsertSecret(option *SecretOption) error {
+func upsertSecret(option SecretOption) error {
 	secret, err := getSecret(option)
 	if err != nil {
 		if NotFount(err) {
@@ -166,7 +209,6 @@ func upsertSecret(option *SecretOption) error {
 
 		return err
 	}
-
 	if err := updateSecret(secret, option); err != nil {
 		return err
 	}
@@ -174,9 +216,17 @@ func upsertSecret(option *SecretOption) error {
 	return nil
 }
 
-func updateSecret(s *api.Secret, o *SecretTokenOptions) error {
-	s.Data[PasswordSecret] = []byte(o.GitHubToken)
-	return put.update(s, o.DatafactoryToken)
+func updateSecret(s *api.Secret, o SecretOption) error {
+
+	if o.IsSSHSecret() {
+		s.Data["ssh-privatekey"] = []byte(o.GetPrivateKey())
+	}
+
+	if o.IsTokenSecret() {
+		s.Data[PasswordSecret] = []byte(o.GetToken())
+	}
+
+	return put.update(s, o.GetDFToken())
 }
 
 type SecretTokenOptions struct {
@@ -197,7 +247,7 @@ type SecretSSHOptions struct {
 	PrivateKey       string
 }
 
-func (o *SecretTokenOptions) validate() error {
+func (o *SecretTokenOptions) Validate() error {
 	if len(o.NameSpace) == 0 {
 		return errors.New("secret option namespace is null")
 	}
@@ -221,7 +271,7 @@ func (o *SecretTokenOptions) validate() error {
 	return nil
 }
 
-func (o *SecretSSHOptions) validate() error {
+func (o *SecretSSHOptions) Validate() error {
 	if len(o.NameSpace) == 0 {
 		return errors.New("secret option namespace is null")
 	}
@@ -246,11 +296,11 @@ func (o *SecretSSHOptions) validate() error {
 }
 
 func setSecretURL(namespace string) string {
-	return DFHost + fmt.Sprintf(SecretsURL, namespace)
+	return DFHost_API + fmt.Sprintf(SecretsURL, namespace)
 }
 
 func setSecretURLWithName(namespace string, name string) string {
-	return DFHost + fmt.Sprintf(SecretURL, namespace, name)
+	return DFHost_API + fmt.Sprintf(SecretURL, namespace, name)
 }
 
 func getUserKey(user, source string) string {

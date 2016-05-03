@@ -11,7 +11,8 @@ var (
 	tokenConfig                                           Config
 	GithubRedirectUrl, GithubClientID, GithubClientSecret string
 	db                                                    Store
-	DFHost                                                string
+	DFHost_API                                            string
+	DFHost_Key                                            string
 	DF_API_Auth                                           string
 )
 
@@ -75,11 +76,12 @@ func initGithubPlugin() {
 }
 
 func initDFHost() {
-	DFHost = DatafoundryEnv.Get("DATAFACTORY_HOST_ADDR", nil)
+	DFHost_API = DatafoundryEnv.Get("DATAFACTORY_HOST_ADDR", nil)
+	DFHost_Key = etcdFormatUrl(DFHost_API)
 }
 
 func initAPI() {
-	DF_API_Auth = DFHost + "/oapi/v1/users/~"
+	DF_API_Auth = DFHost_API + "/oapi/v1/users/~"
 }
 
 func initEnvs() {

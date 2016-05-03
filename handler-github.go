@@ -90,8 +90,8 @@ func githubHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	go syncOauthUser(db, userInfo)
 
 	option := setTokenSecretOption(userInfo)
-	if err := option.validate(); err != nil {
-		retHttpCodef(400, w, "validate datafoundry secret option err %s\n", err.Error())
+	if err := option.Validate(); err != nil {
+		retHttpCodef(400, w, "validate datafoundry secret option err %v\n", err)
 		return
 	}
 
@@ -215,7 +215,7 @@ func queryRequestURI(r *http.Request) (url.Values, error) {
 	return url.ParseQuery(strings.TrimPrefix(uri.RawQuery, uri.Path+"?"))
 }
 
-func setTokenSecretOption(info map[string]string) *SecretTokenOptions {
+func setTokenSecretOption(info map[string]string) SecretOption {
 	return &SecretTokenOptions{
 		NameSpace:        info["namespace"],
 		UserName:         info["user"],

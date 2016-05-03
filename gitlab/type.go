@@ -59,7 +59,7 @@ type DeployKey struct {
 }
 
 type NewDeployKeyOption struct {
-	ProjectId string
+	ProjectId int
 	Param     NewDeployKeyParam
 }
 

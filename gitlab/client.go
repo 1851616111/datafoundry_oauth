@@ -6,7 +6,7 @@ const (
 	Gitlab_Credential_Key       = "PRIVATE-TOKEN"
 	GitLab_Api_Url_Path_User    = "/api/v3/user"
 	GitLab_Api_Url_Path_Project = "/api/v3/projects/owned"
-	GitLab_Api_Url_Path_Keys    = "/api/v3/projects/%s/keys"
+	GitLab_Api_Url_Path_Keys    = "/api/v3/projects/%d/keys"
 )
 
 type Client interface {
@@ -96,18 +96,19 @@ func (c *HttpFactory) DeployKey(host, privateToken string) DeployKeys {
 }
 
 type DeployKeys interface {
-	ListKeys() ([]DeployKey, error)
+	ListKeys(projectId int) ([]DeployKey, error)
 	CreateKey(option *NewDeployKeyOption) error
 	DeleteKey(id int) error
 }
 
-func (r *RestClient) ListKeys() ([]DeployKey, error) {
-	keys := []DeployKey{}
-	if err := r.Client.GetJson(keys, r.Url, r.Credential.Key, r.Credential.Value); err != nil {
+func (r *RestClient) ListKeys(projectId int) ([]DeployKey, error) {
+	keys := new([]DeployKey)
+	url := fmt.Sprintf(r.Url, projectId)
+	if err := r.Client.GetJson(keys, url, r.Credential.Key, r.Credential.Value); err != nil {
 		return nil, err
 	}
 
-	return keys, nil
+	return *keys, nil
 }
 
 func (r *RestClient) CreateKey(option *NewDeployKeyOption) error {
@@ -116,8 +117,7 @@ func (r *RestClient) CreateKey(option *NewDeployKeyOption) error {
 	if err != nil {
 		return err
 	}
-
-	_, err = r.Client.Post(url, b, r.Credential.Key, r.Credential.Value)
+	_	, err = r.Client.Post(url, b, r.Credential.Key, r.Credential.Value)
 	return err
 }
 
