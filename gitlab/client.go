@@ -117,7 +117,8 @@ func (r *RestClient) CreateKey(option *NewDeployKeyOption) error {
 	if err != nil {
 		return err
 	}
-	_	, err = r.Client.Post(url, b, r.Credential.Key, r.Credential.Value)
+
+	_, err = r.Client.Post(url, b, r.Credential.Key, r.Credential.Value)
 	return err
 }
 

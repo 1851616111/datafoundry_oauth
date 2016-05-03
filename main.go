@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	rsautil "github.com/asiainfoLDP/datafactory_oauth2/util"
 	router "github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
@@ -14,6 +15,7 @@ var (
 	DFHost_API                                            string
 	DFHost_Key                                            string
 	DF_API_Auth                                           string
+	KeyPool                                               *rsautil.Pool
 )
 
 func init() {
@@ -24,6 +26,9 @@ func init() {
 	initOauth2Plugin()
 	initDFHost()
 	initAPI()
+	initSSHKey()
+
+
 }
 
 func main() {
@@ -100,6 +105,12 @@ func initEnvs() {
 	DatafoundryEnv.Init()
 	DatafoundryEnv.Print()
 	DatafoundryEnv.Validate(envNotNil)
+}
+
+func initSSHKey() {
+	rsautil.Init("ssh-keygen")
+	KeyPool = rsautil.NewKeyPool(10)
+	go KeyPool.Run()
 }
 
 //https://github.com/login/oauth/authorize?client_id=2369ed831a59847924b4&scope=repo,user:email&state=ccc&redirect_uri=http://oauth2-oauth.app.asiainfodata.com/v1/github-redirect

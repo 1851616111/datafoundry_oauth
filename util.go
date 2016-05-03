@@ -147,5 +147,5 @@ func etcdFormatUrl(url string) string {
 }
 
 func convertDFValidateName(name string) string {
-	return strings.Replace(name,".", "-", -1)
+	return strings.Replace(name, ".", "-", -1)
 }
