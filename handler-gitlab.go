@@ -9,6 +9,7 @@ import (
 	gitlabapi "github.com/asiainfoLDP/datafactory_oauth2/gitlab"
 	gitlabutil "github.com/asiainfoLDP/datafactory_oauth2/util"
 	dfapi "github.com/openshift/origin/pkg/user/api/v1"
+	"strconv"
 	"strings"
 )
 
@@ -81,8 +82,8 @@ res:
 	retHttpCodef(200, w, "ok")
 }
 
-//curl http://127.0.0.1:9443/v1/gitlab/repos/owner -H "Authorization:bearer HrA7qZo1MA7TKxYgbx7htR_9ez-FSXGuA8aM2fZzRC4"
-//curl http://127.0.0.1:9443/v1/gitlab/repos/org -H "Authorization:bearer HrA7qZo1MA7TKxYgbx7htR_9ez-FSXGuA8aM2fZzRC4"
+//curl http://127.0.0.1:9443/v1/gitlab/repos/owner -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
+//curl http://127.0.0.1:9443/v1/gitlab/repos/org -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
 func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	userType := ps.ByName("user")
 
@@ -122,6 +123,50 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 	}
 
 	retHttpCodef(200, w, "%s", string(b))
+}
+
+//curl http://127.0.0.1:9443/v1/gitlab/repo/43/branches -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
+func gitLabBranchHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	repo := ps.ByName("repo")
+	var projectId int
+	var err error
+	if projectId, err = strconv.Atoi(repo); err != nil {
+		retHttpCode(400, w, "invalide param repo ")
+		return
+	}
+
+	if projectId < 0 {
+		retHttpCode(400, w, "invalide param repo ")
+		return
+	}
+
+	token := r.Header.Get("Authorization")
+	var user *dfapi.User
+	if user, err = authDF(token); err != nil {
+		retHttpCodef(401, w, "auth err %s\n", err.Error())
+		return
+	}
+
+	option, err := getGitLabOptionByDFUser(user.Name)
+	if err != nil {
+		retHttpCodef(400, w, "get gitlab info err %v", err.Error())
+		return
+	}
+
+	branches, err := glApi.Branch(option.Host, option.PrivateToken).ListBranches(projectId)
+	if err != nil {
+		retHttpCodef(400, w, "get project branches err %v", err.Error())
+		return
+	}
+
+	b, err := json.Marshal(branches)
+	if err != nil {
+		retHttpCodef(400, w, "convert branches err %v", err)
+		return
+	}
+
+	retHttpCodef(200, w, "%s", string(b))
+
 }
 
 //test case1: 同一用户针对不同gitlab

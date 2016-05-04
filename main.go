@@ -40,6 +40,7 @@ func main() {
 
 	router.POST("/v1/gitlab", gitlabHandler)
 	router.GET("/v1/gitlab/repos/:user", gitLabOwnerReposHandler)
+	router.GET("/v1/gitlab/repo/:repo/branches", gitLabBranchHandler)
 	router.POST("/v1/gitlab/authorize/deploy", gitLabSecretHandler)
 
 	log.Fatal(http.ListenAndServe(":9443", router))
