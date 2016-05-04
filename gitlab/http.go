@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	ErrNotFound = errors.New("not found")
+	ErrNotFound     = errors.New("not found")
+	ErrUnauthorized = errors.New("unauthorized")
 )
 
 type HttpFactory struct {
@@ -91,6 +92,8 @@ func httpGet(url string, credential ...string) ([]byte, error) {
 		switch resp.StatusCode {
 		case 404:
 			return nil, ErrNotFound
+		case 401:
+			return nil, ErrUnauthorized
 		case 200:
 			return ioutil.ReadAll(resp.Body)
 		}
@@ -173,4 +176,8 @@ func httpDelete(url string, credential ...string) ([]byte, error) {
 	}
 
 	return ioutil.ReadAll(resp.Body)
+}
+
+func IsUnauthorized(err error) bool {
+	return err == ErrUnauthorized
 }

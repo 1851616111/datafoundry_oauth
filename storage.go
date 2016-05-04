@@ -57,3 +57,12 @@ func (c *Etcd) get(key string, sort, recursive bool) (string, error) {
 
 	return rsp.Node.Value, nil
 }
+
+func getJson(key string, box interface{}) error {
+	b, err := db.get(key, true, false)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal([]byte(b), box)
+}

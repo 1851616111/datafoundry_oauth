@@ -94,7 +94,6 @@ func httpAction(method, url string, body []byte, credential ...string) ([]byte, 
 	}
 	defer resp.Body.Close()
 	b, err := ioutil.ReadAll(resp.Body)
-	fmt.Println(string(b))
 	if err != nil {
 		fmt.Println(err)
 		return nil, fmt.Errorf("[http] read err %s, %s\n", url, err)

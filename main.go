@@ -28,7 +28,6 @@ func init() {
 	initAPI()
 	initSSHKey()
 
-
 }
 
 func main() {

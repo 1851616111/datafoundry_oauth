@@ -7,15 +7,16 @@ import (
 	"encoding/json"
 	"fmt"
 	gitlabapi "github.com/asiainfoLDP/datafactory_oauth2/gitlab"
-	api "github.com/openshift/origin/pkg/user/api/v1"
+	gitlabutil "github.com/asiainfoLDP/datafactory_oauth2/util"
+	dfapi "github.com/openshift/origin/pkg/user/api/v1"
 	"strings"
 )
 
 var (
-	gitlab  = gitlabapi.ClientFactory()
+	glApi = gitlabapi.ClientFactory()
 )
 
-//curl http://127.0.0.1:9443/v1/gitlab  -d '{"host":"https://code.dataos.io", "user":"mengjing","private_token":"fXYznpUCTQQe5sjM4FWm"}' -H "Authorization:bearer HrA7qZo1MA7TKxYgbx7htR_9ez-FSXGuA8aM2fZzRC4"
+//curl http://127.0.0.1:9443/v1/gitlab  -d '{"host":"https://code.dataos.io", "user":"mengjing","private_token":"fXYznpUCTQQe5sjM4FWm"}' -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
 func gitlabHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	authorization := r.Header.Get("Authorization")
 
@@ -35,7 +36,7 @@ func gitlabHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 			filling: f,
 			err:     err,
 		}
-	}(gitlab, option, &ret_gb)
+	}(glApi, option, &ret_gb)
 
 	go func(authorization string, ret *chan *datafoundryDumpling) {
 		f, err := authDF(authorization)
@@ -47,7 +48,7 @@ func gitlabHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	}(authorization, &ret_df)
 
 	count := 0
-	var oUser *api.User
+	var oUser *dfapi.User
 res:
 	for {
 		select {
@@ -86,7 +87,7 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 	userType := ps.ByName("user")
 
 	token := r.Header.Get("Authorization")
-	var user *api.User
+	var user *dfapi.User
 	var err error
 	if user, err = authDF(token); err != nil {
 		retHttpCodef(401, w, "auth err %s\n", err.Error())
@@ -99,7 +100,7 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 		return
 	}
 
-	projects, err := gitlab.Project(option.Host, option.PrivateToken).ListProjects()
+	projects, err := glApi.Project(option.Host, option.PrivateToken).ListProjects()
 	if err != nil {
 		retHttpCodef(400, w, "get projects err %v", err.Error())
 		return
@@ -123,8 +124,10 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 	retHttpCodef(200, w, "%s", string(b))
 }
 
+//test case1: 同一用户针对不同gitlab
+//test case2: 不同用户针对不同gitlab
 //curl http://etcdsystem.servicebroker.dataos.io:2379/v2/keys/df_service/https:/lab.asiainfodata.com:8443/df_user/mengjing/oauth/gitlab_service/https:/code.dataos.io -u asiainfoLDP:6ED9BA74-75FD-4D1B-8916-842CB936AC1A
-//curl http://127.0.0.1:9443/v1/gitlab/authorize/deploy -H "Authorization:bearer HrA7qZo1MA7TKxYgbx7htR_9ez-FSXGuA8aM2fZzRC4" -H "namespace:oauth" -d '{"host":"https://code.dataos.io","project_id":43}'
+//curl http://127.0.0.1:9443/v1/gitlab/authorize/deploy -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8" -H "namespace:oauth" -d '{"host":"https://code.dataos.io","project_id":43}'
 func gitLabSecretHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	namespace := strings.TrimSpace(r.Header.Get("namespace"))
 	if namespace == "" {
@@ -148,61 +151,85 @@ func gitLabSecretHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		return
 	}
 
-	//df_service/https_lab.asiainfodata.com:8443/df_user/mengjing/oauth/gitlabs/info
-	registry := fmt.Sprintf("/df_service/%s/df_user/%s/oauth/gitlabs/info", DFHost_Key, dfUser.Name)
-	str, err := db.get(registry, true, true)
-	if err != nil {
+	//根据当前oauth的配置的DataFoundry服务器,查询当前用户绑定的Gitlab服务HostA
+	var gitLab *gitLabInfo
+	if gitLab, err = getGitLabOptionByDFUser(dfUser.Name); err != nil {
 		retHttpCodef(400, w, "find gilab host err %v", err.Error())
 		return
 	}
 
-	gitLab := new(gitLabInfo)
-	if err := json.Unmarshal([]byte(str), gitLab); err != nil {
-		retHttpCodef(400, w, "find gilab host err %v", err.Error())
-	}
-
-	if _, err := gitlab.User(gitLab.Host, gitLab.PrivateToken).GetUser(); err != nil {
-		retHttpCodef(400, w, "validate gitlab private_token err %v", err.Error())
+	//HostA与用户提供的Host不一致,应该返回并定失败
+	if gitLab.Host != bind.Host {
+		//todo 一个用户对应多主机情况,需要向党莎确认
+		retHttpCodef(400, w, "unknow host %s %v", bind.Host, err.Error())
 		return
 	}
 
-	ks, err := gitlab.DeployKey(gitLab.Host, gitLab.PrivateToken).ListKeys(bind.Id)
+	//验证DF用户绑定gilab时的PrivateToken是否生效, 若{"message":"401 Unauthorized"},则PrivateToken失效
+	ks, err := glApi.DeployKey(gitLab.Host, gitLab.PrivateToken).ListKeys(bind.Id)
 	if err != nil {
+		if gitlabapi.IsUnauthorized(err) {
+			retHttpCodef(401, w, "gitlab %s private_token invalid\n", bind.Host)
+			return
+		}
 		retHttpCodef(400, w, "get gitlab deploy keys err %v", err.Error())
 		return
 	}
 
 	//gitlab project deploykey title format
 	//df_host---https_lab.asiainfo.com:8443---df_user---panxy
-	commonKey := generateGitLabTitle(DFHost_Key, dfUser.Name)
+	filter := generateGitLabTitle(DFHost_Key, dfUser.Name)
 	if len(ks) > 0 {
-		ks = gitlabapi.FilterDeployKeysByTitle(ks, commonKey, strings.HasPrefix)
+		//过滤出DF_oauth2的对应的主机和用户名下面的
+		ks = gitlabapi.FilterDeployKeysByTitle(ks, filter, strings.HasPrefix)
 	}
 
 	//df_service 区分不同环境可能使用统一DB造成数据错乱
-	//df_user 区分不通fd用户不能使用相同的密钥对
+	//df_user 区分不通DF用户不能使用相同的密钥对
 	//gitlab_service 一个环境(ex. project, release, develop)的某个用户可以接入不同的私有gitlab
 
-	keyPair := KeyPool.Pop()
+	//若gitlab的project上没有相应的deploykey,则在gitlab上的project创建deployke,并存储
+	//若gitlab的project上面找到相应的deploykey,切存储中有记录,则不重新生成sshkey
+	//若gitlab的project上面找到相应的deploykey,由于恶劣的情况导致存储丢失,暂时无能为力.
 
-	fmt.Printf("public:  %s---------->", keyPair.Public)
-	fmt.Printf("private: %s------------>", keyPair.Private)
+	errTryCount := 0
+	var deployKey *gitlabutil.KeyPair
+	var exist bool
+	exist, deployKey = hasDeployKey(DFHost_Key, dfUser.Name, bind.Host)
+retry:
+	{
+		if !exist {
+			if deployKey == nil {
+				//若deploy不存在,且过程无差错,则重新生成
+				deployKey = KeyPool.Pop()
+			} else {
+				//查询过程出错(网络,数据库等一场),则直接返回,因为不确定是否存储中存在之前使用的deploykey,所以不能往下走
+				errTryCount++
+				if errTryCount == 2 {
+					retHttpCodef(400, w, "get gitlab deploy key in store err %v", err.Error())
+					return
+				}
+				goto retry
+			}
+		}
+	}
 
 	if len(ks) == 0 {
-		keyOption := new(gitlabapi.NewDeployKeyOption)
-		keyOption.ProjectId = bind.Id
-		keyOption.Param = gitlabapi.NewDeployKeyParam{
-			Title: commonKey,
-			Key:   string(keyPair.Public),
+		//todo make it transaction
+		keyOption := &gitlabapi.NewDeployKeyOption{
+			ProjectId: bind.Id,
+			Param: gitlabapi.NewDeployKeyParam{
+				Title: filter,
+				Key:   string(deployKey.Public),
+			},
 		}
-		if err := gitlab.DeployKey(gitLab.Host, gitLab.PrivateToken).CreateKey(keyOption); err != nil {
+
+		if err := glApi.DeployKey(gitLab.Host, gitLab.PrivateToken).CreateKey(keyOption); err != nil {
 			retHttpCodef(400, w, "create deploy key err %v", err.Error())
 			return
 		}
 
-		//逻辑有问题
-		key := fmt.Sprintf("/df_service/%s/df_user/%s/oauth/gitlab_service/%s/deploykey", DFHost_Key, dfUser.Name, etcdFormatUrl(bind.Host))
-		if err := db.set(key, keyPair); err != nil {
+		if err := setDeployKey(DFHost_Key, dfUser.Name, bind.Host, deployKey); err != nil {
 			retHttpCodef(400, w, "save private key err %v", err.Error())
 			return
 		}
@@ -213,7 +240,7 @@ func gitLabSecretHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		UserName:         dfUser.Name,
 		SecretName:       generateGitlabName(dfUser.Name, Schemastripper(bind.Host)),
 		DatafactoryToken: token,
-		PrivateKey:       string(keyPair.Private),
+		PrivateKey:       string(deployKey.Private),
 	}
 
 	if err := option.Validate(); err != nil {
@@ -226,9 +253,7 @@ func gitLabSecretHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		return
 	}
 
-
-
-	retHttpCode(200, w, "ok")
+	retHttpCode(200, w, fmt.Sprintf("{\"secret\":\"%s\"}", option.SecretName))
 }
 
 func getGitLabOptionByDFUser(name string) (*gitLabInfo, error) {
