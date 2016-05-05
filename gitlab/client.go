@@ -61,12 +61,13 @@ func (c *HttpFactory) Project(host, privateToken string) Projects {
 }
 
 type Projects interface {
-	ListProjects() ([]Project, error)
+	ListProjects(page uint32) ([]Project, error)
 }
 
-func (r *RestClient) ListProjects() ([]Project, error) {
+func (r *RestClient) ListProjects(page uint32) ([]Project, error) {
 	projects := new([]Project)
-	if err := r.Client.GetJson(projects, r.Url, r.Credential.Key, r.Credential.Value); err != nil {
+	url := fmt.Sprintf("%s?page=%d", r.Url, page)
+	if err := r.Client.GetJson(projects, url, r.Credential.Key, r.Credential.Value); err != nil {
 		return nil, err
 	}
 

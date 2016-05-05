@@ -82,8 +82,8 @@ res:
 	retHttpCodef(200, w, "ok")
 }
 
-//curl http://127.0.0.1:9443/v1/gitlab/repos/owner -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
-//curl http://127.0.0.1:9443/v1/gitlab/repos/org -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
+//curl http://127.0.0.1:9443/v1/gitlab/repos/owner?page=1 -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
+//curl http://127.0.0.1:9443/v1/gitlab/repos/org?page=2 -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
 func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	userType := ps.ByName("user")
 
@@ -101,7 +101,19 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 		return
 	}
 
-	projects, err := glApi.Project(option.Host, option.PrivateToken).ListProjects()
+	p := r.FormValue("page")
+	var page int
+
+	if page, err = strconv.Atoi(p); err != nil {
+		retHttpCodef(400, w, "invalide param page %d", p)
+		return
+	}
+	if page < 1 {
+		retHttpCodef(400, w, "invalide param page %d", p)
+		return
+	}
+
+	projects, err := glApi.Project(option.Host, option.PrivateToken).ListProjects(uint32(page))
 	if err != nil {
 		retHttpCodef(400, w, "get projects err %v", err.Error())
 		return
