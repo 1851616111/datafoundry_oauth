@@ -119,6 +119,9 @@ func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httproute
 
 	var userInfo map[string]string
 	if userInfo, err = getGithubInfo(user); err != nil {
+		if EtcdKeyNotFound(err) {
+			retHttpCode(401, w, "Gihub.com Unauthorized")
+		}
 		retHttpCodef(400, w, "get user info err %s\n", err.Error())
 		return
 	}
