@@ -2,9 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	gitlabapi "github.com/asiainfoLDP/datafactory_oauth2/gitlab"
+	gitlabutil "github.com/asiainfoLDP/datafactory_oauth2/util"
 	oapi "github.com/openshift/origin/pkg/user/api/v1"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
@@ -41,4 +44,26 @@ func parseRequestBody(r *http.Request, i interface{}) error {
 	}
 
 	return nil
+}
+
+func hasDeployKey(DataFoundryHost, user, gitLabHost string) (bool, *gitlabutil.KeyPair) {
+	deployKey := fmt.Sprintf("/df_service/%s/df_user/%s/oauth/gitlab_service/%s/deploykey", DataFoundryHost, user, etcdFormatUrl(gitLabHost))
+
+	pair := new(gitlabutil.KeyPair)
+	if err := getJson(deployKey, pair); err != nil {
+		if EtcdKeyNotFound(err) {
+			//不存在
+			return false, nil
+		}
+		//异常情况,不知道是否存在
+		log.Printf("get deploy key unknown err %v", err)
+		return true, nil
+	}
+	//存在并取回结果
+	return true, pair
+}
+
+func setDeployKey(DataFoundryHost, user, gitLabHost string, new *gitlabutil.KeyPair) error {
+	deployKey := fmt.Sprintf("/df_service/%s/df_user/%s/oauth/gitlab_service/%s/deploykey", DataFoundryHost, user, etcdFormatUrl(gitLabHost))
+	return db.set(deployKey, new)
 }

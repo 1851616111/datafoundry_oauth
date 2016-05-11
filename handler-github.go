@@ -18,9 +18,8 @@ const (
 	Option_Github_State = "state"
 )
 
-//curl http://127.0.0.1:9443/v1/github-redirect?code=4fda33093c9fc12711f1&\state=ccc
 //curl http://etcdsystem.servicebroker.dataos.io:2379/v2/keys/oauth/namespace/  -u asiainfoLDP:6ED9BA74-75FD-4D1B-8916-842CB936AC1A
-//curl http://127.0.0.1:9443/v1/github-redirect?code=4fda33093c9fc12711f1\&state=ccc?namespace=auth\&bearer=xxxxxxxxxxxxxxxxxxxxxxxxx
+//curl http://127.0.0.1:9443/v1/github-redirect?code=d13f63cc79c2907f9e55\&state=xcv&namespace=oauthtest\&bearer=Uzl65t8jzNc46ZoZEqS4Rg8R9JVbQ5plOH7Nf0gsJV4
 func githubHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	r.ParseForm()
 	var ns, bearer string
@@ -103,10 +102,16 @@ func githubHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	retHttpCode(200, w, "ok")
 }
 
+//curl http://127.0.0.1:9443/v1/repos/github/owner -H  "Authorization: bearer Uzl65t8jzNc46ZoZEqS4Rg8R9JVbQ5plOH7Nf0gsJV4"
 func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var user *api.User
 	var err error
 	token := r.Header.Get("Authorization")
+	if len(token) == 0 {
+		retHttpCode(400, w, "no header Authorization\n")
+		return
+	}
+
 	if user, err = authDF(token); err != nil {
 		retHttpCodef(401, w, "auth err %s\n", err.Error())
 		return

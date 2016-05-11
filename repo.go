@@ -5,6 +5,7 @@ type NanoRepo struct {
 	FullName string `json:"full_name"`
 	Owner    *Owner `json:"owner,omitempty"`
 	Private  bool   `json:"private"`
+	CloneUrl string `json:"clone_url"`
 }
 
 type Org struct {

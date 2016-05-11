@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"k8s.io/kubernetes/pkg/api"
+	"strings"
 )
 
 const (
@@ -200,7 +201,7 @@ func getSecret(o SecretOption) (*api.Secret, error) {
 func upsertSecret(option SecretOption) error {
 	secret, err := getSecret(option)
 	if err != nil {
-		if NotFount(err) {
+		if NotFound(err) {
 			if err := createSecret(option); err != nil {
 				return err
 			}
@@ -209,6 +210,14 @@ func upsertSecret(option SecretOption) error {
 
 		return err
 	}
+
+	if option.IsSSHSecret() {
+		a, b := strings.TrimSpace(option.GetPrivateKey()), strings.TrimSpace(string(secret.Data["ssh-privatekey"]))
+		if a == b {
+			return nil
+		}
+	}
+
 	if err := updateSecret(secret, option); err != nil {
 		return err
 	}
@@ -239,12 +248,12 @@ type SecretTokenOptions struct {
 }
 
 type SecretSSHOptions struct {
-	NameSpace  string
-	UserName   string
-	SecretName string
+	NameSpace  string `json:"-"`
+	UserName   string `json:"-"`
+	SecretName string `json:"secret"`
 
-	DatafactoryToken string
-	PrivateKey       string
+	DatafactoryToken string `json:"-"`
+	PrivateKey       string `json:"-"`
 }
 
 func (o *SecretTokenOptions) Validate() error {

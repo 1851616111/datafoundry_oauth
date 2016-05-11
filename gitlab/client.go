@@ -7,13 +7,14 @@ const (
 	GitLab_Api_Url_Path_User    = "/api/v3/user"
 	GitLab_Api_Url_Path_Project = "/api/v3/projects/owned"
 	GitLab_Api_Url_Path_Keys    = "/api/v3/projects/%d/keys"
+	GitLab_Api_Url_Path_Branch  = "/api/v3/projects/%d/repository/branches"
 )
 
 type Client interface {
 	UserInterface
 	//Groups
 	ProjectInterface
-	//Branches
+	BranchInterface
 	DeployKeyInterface
 }
 
@@ -60,16 +61,25 @@ func (c *HttpFactory) Project(host, privateToken string) Projects {
 }
 
 type Projects interface {
-	ListProjects() ([]Project, error)
+	ListProjects(page uint32) ([]Project, error)
 }
 
-func (r *RestClient) ListProjects() ([]Project, error) {
+func (r *RestClient) ListProjects(page uint32) ([]Project, error) {
 	projects := new([]Project)
-	if err := r.Client.GetJson(projects, r.Url, r.Credential.Key, r.Credential.Value); err != nil {
+	url := fmt.Sprintf("%s?page=%d", r.Url, page)
+	if err := r.Client.GetJson(projects, url, r.Credential.Key, r.Credential.Value); err != nil {
 		return nil, err
 	}
 
 	return *projects, nil
+}
+
+type BranchInterface interface {
+	Branch(host, privateToken string) Branches
+}
+
+func (c *HttpFactory) Branch(host, privateToken string) Branches {
+	return c.newClient(host, GitLab_Api_Url_Path_Branch, privateToken)
 }
 
 type Branches interface {
@@ -79,12 +89,12 @@ type Branches interface {
 func (r *RestClient) ListBranches(projectId int) ([]Branch, error) {
 	r.Url = fmt.Sprintf(r.Url, projectId)
 
-	branches := []Branch{}
+	branches := new([]Branch)
 	if err := r.Client.GetJson(branches, r.Url, r.Credential.Key, r.Credential.Value); err != nil {
 		return nil, err
 	}
 
-	return branches, nil
+	return *branches, nil
 }
 
 type DeployKeyInterface interface {
@@ -117,7 +127,8 @@ func (r *RestClient) CreateKey(option *NewDeployKeyOption) error {
 	if err != nil {
 		return err
 	}
-	_	, err = r.Client.Post(url, b, r.Credential.Key, r.Credential.Value)
+
+	_, err = r.Client.Post(url, b, r.Credential.Key, r.Credential.Value)
 	return err
 }
 
