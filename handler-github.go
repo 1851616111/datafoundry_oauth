@@ -228,7 +228,7 @@ func setTokenSecretOption(info map[string]string) SecretOption {
 		NameSpace:        info["namespace"],
 		UserName:         info["user"],
 		SecretName:       generateGithubName(info["user"]),
-		DatafactoryToken: info["bearer"],
+		DataFoundryToken: info["bearer"],
 		GitHubToken:      info["credential_value"],
 	}
 }

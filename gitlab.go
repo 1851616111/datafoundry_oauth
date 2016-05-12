@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	gitlabapi "github.com/asiainfoLDP/datafactory_oauth2/gitlab"
-	gitlabutil "github.com/asiainfoLDP/datafactory_oauth2/util"
+	gitlabapi "github.com/asiainfoLDP/datafoundry_oauth2/gitlab"
+	gitlabutil "github.com/asiainfoLDP/datafoundry_oauth2/util"
 	oapi "github.com/openshift/origin/pkg/user/api/v1"
 	"io/ioutil"
 	"log"
