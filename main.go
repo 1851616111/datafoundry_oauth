@@ -91,7 +91,7 @@ func initAPI() {
 
 func initEnvs() {
 	envNotNil := func(k string) {
-		fmt.Errorf("[Env] %s must not be nil.", k)
+		log.Fatalf("[Env] %s must not be nil.", k)
 	}
 
 	EtcdStorageEnv.Init()
