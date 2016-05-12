@@ -2,7 +2,7 @@ package util
 
 import (
 	"fmt"
-	"github.com/asiainfoLDP/datafoundry_oauth2/util/rand"
+	"code.dataos.io/asiainfoLDP/datafoundry_oauth2/util/rand"
 	"io/ioutil"
 	"log"
 	"os"

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	rsautil "github.com/asiainfoLDP/datafoundry_oauth2/util"
+	rsautil "code.dataos.io/asiainfoLDP/datafoundry_oauth2/util"
 	router "github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
