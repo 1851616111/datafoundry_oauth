@@ -6,8 +6,8 @@ import (
 
 	"encoding/json"
 	"fmt"
-	gitlabapi "github.com/asiainfoLDP/datafactory_oauth2/gitlab"
-	gitlabutil "github.com/asiainfoLDP/datafactory_oauth2/util"
+	gitlabapi "github.com/asiainfoLDP/datafoundry_oauth2/gitlab"
+	gitlabutil "github.com/asiainfoLDP/datafoundry_oauth2/util"
 	dfapi "github.com/openshift/origin/pkg/user/api/v1"
 	"strconv"
 	"strings"
@@ -296,7 +296,7 @@ retry:
 		NameSpace:        namespace,
 		UserName:         dfUser.Name,
 		SecretName:       generateGitlabName(dfUser.Name, Schemastripper(bind.Host)),
-		DatafactoryToken: token,
+		DataFoundryToken: token,
 		PrivateKey:       string(deployKey.Private),
 	}
 

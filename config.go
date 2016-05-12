@@ -15,7 +15,7 @@ var (
 		envs: map[string]string{"GITHUB_REDIRECT_URL": "", "GITHUB_CLIENT_ID": "", "GITHUB_CLIENT_SECRET": ""},
 	}
 	DatafoundryEnv Env = &EnvOnce{
-		envs: map[string]string{"DATAFACTORY_HOST_ADDR": ""},
+		envs: map[string]string{"DATAFOUNDRY_HOST_ADDR": ""},
 	}
 )
 

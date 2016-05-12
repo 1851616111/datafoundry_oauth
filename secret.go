@@ -134,11 +134,11 @@ type SecretOption interface {
 }
 
 func (o *SecretSSHOptions) GetDFToken() string {
-	return o.DatafactoryToken
+	return o.DataFoundryToken
 }
 
 func (o *SecretTokenOptions) GetDFToken() string {
-	return o.DatafactoryToken
+	return o.DataFoundryToken
 }
 
 func (o *SecretSSHOptions) GetDFNamespace() string {
@@ -239,20 +239,20 @@ func updateSecret(s *api.Secret, o SecretOption) error {
 }
 
 type SecretTokenOptions struct {
-	NameSpace  string
-	UserName   string
-	SecretName string
+	NameSpace        string
+	UserName         string
+	SecretName       string
 
-	DatafactoryToken string
+	DataFoundryToken string
 	GitHubToken      string
 }
 
 type SecretSSHOptions struct {
-	NameSpace  string `json:"-"`
-	UserName   string `json:"-"`
-	SecretName string `json:"secret"`
+	NameSpace        string `json:"-"`
+	UserName         string `json:"-"`
+	SecretName       string `json:"secret"`
 
-	DatafactoryToken string `json:"-"`
+	DataFoundryToken string `json:"-"`
 	PrivateKey       string `json:"-"`
 }
 
@@ -269,7 +269,7 @@ func (o *SecretTokenOptions) Validate() error {
 		return errors.New("secret option secret name is null")
 	}
 
-	if len(o.DatafactoryToken) == 0 {
+	if len(o.DataFoundryToken) == 0 {
 		return errors.New("secret option df token is null")
 	}
 
@@ -293,7 +293,7 @@ func (o *SecretSSHOptions) Validate() error {
 		return errors.New("secret option secret name is null")
 	}
 
-	if len(o.DatafactoryToken) == 0 {
+	if len(o.DataFoundryToken) == 0 {
 		return errors.New("secret option df token is null")
 	}
 

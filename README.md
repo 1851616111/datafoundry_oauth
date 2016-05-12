@@ -1,8 +1,8 @@
-# datafactory_oauth2
+# datafoundry_oauth2
 
 # Overview
 
-datafactory_oauth2 is a service based on oauth2.
+datafoundry_oauth2 is a service based on oauth2.
 
 It is designed for datafoundry web to
 
@@ -10,7 +10,7 @@ It is designed for datafoundry web to
 
 2. reduce data from github api for datafoundry web
 
-datafactory_oauth2 need etcd storage
+datafoundry_oauth2 need etcd storage
 
 # Env Dependent
 
@@ -19,7 +19,7 @@ datafactory_oauth2 need etcd storage
 | GITHUB_REDIRECT_URL     |  oauth2 redirect url on github  |  true  |
 | GITHUB_CLIENT_ID        |  oauth2 cliend id on github     |  true  |
 | GITHUB_CLIENT_SECRET    |  oauth2 cliend secret on github |  true  |
-| DATAFACTORY_HOST_ADDR   |  datafoundry api server addr    |  true  |
+| DATAFOUNDRY_HOST_ADDR   |  datafoundry api server addr    |  true  |
 | ETCD_HTTP_ADDR          |  storage addr                   |  true  |
 | ETCD_HTTP_PORT          |  storage port                   |  true  |
 | ETCD_USER               |  storage user                   |  true  |
@@ -29,14 +29,14 @@ datafactory_oauth2 need etcd storage
      export GITHUB_REDIRECT_URL=http://oauth2-oauth.app.asiainfodata.com/v1/github-redirect  // oauth2 is a router name, oauth is a namespace name
      export GITHUB_CLIENT_ID=2369ed831a59847924b4
      export GITHUB_CLIENT_SECRET=510bb29970fcd684d0e7136a5947f92710332c98
-     export DATAFACTORY_HOST_ADDR=https://lab.asiainfodata.com:8443
+     export DATAFOUNDRY_HOST_ADDR=https://lab.asiainfodata.com:8443
         
      export ETCD_HTTP_ADDR=http://etcdsystem.servicebroker.dataos.io
      export ETCD_HTTP_PORT=2379
      export ETCD_USER=asiainfoLDP
      export ETCD_PASSWORD=6ED9BA74-75FD-4D1B-8916-842CB936AC1A
     
-# Running datafactory_oauth2
+# Running datafoundry_oauth2
 start.sh contains a default config to quickly run this service
 
     GO15VENDOREXPERIMENT=1 go build && ./start.sh
@@ -45,7 +45,7 @@ start.sh contains a default config to quickly run this service
 
 # Oauth Callback 
 
-datafoundry web  --request--> Third Oauth --redirect--> datafactory_oauth2
+datafoundry web  --request--> Third Oauth --redirect--> datafoundry_oauth2
 If success, it will generate a secret in datafoundry namespcae with a name {namespace}-{user}-{third-oauth-name} like oauth-panxy-github.
 
     > oc get secret 

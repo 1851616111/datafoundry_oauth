@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	rsautil "github.com/asiainfoLDP/datafactory_oauth2/util"
+	rsautil "github.com/asiainfoLDP/datafoundry_oauth2/util"
 	router "github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
@@ -81,7 +81,7 @@ func initGithubPlugin() {
 }
 
 func initDFHost() {
-	DFHost_API = DatafoundryEnv.Get("DATAFACTORY_HOST_ADDR", nil)
+	DFHost_API = DatafoundryEnv.Get("DATAFOUNDRY_HOST_ADDR", nil)
 	DFHost_Key = etcdFormatUrl(DFHost_API)
 }
 
