@@ -1,3 +1,4 @@
+#!/bin/bash
 function env::export() {
     env=$(eval echo \$$1)
     if [ "X$env" = "X" ];then

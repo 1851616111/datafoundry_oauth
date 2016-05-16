@@ -6,8 +6,8 @@ import (
 
 	"encoding/json"
 	"fmt"
-	gitlabapi "github.com/asiainfoLDP/datafoundry_oauth2/gitlab"
-	gitlabutil "github.com/asiainfoLDP/datafoundry_oauth2/util"
+	gitlabapi "code.dataos.io/asiainfoLDP/datafoundry_oauth2/gitlab"
+	gitlabutil "code.dataos.io/asiainfoLDP/datafoundry_oauth2/util"
 	dfapi "github.com/openshift/origin/pkg/user/api/v1"
 	"strconv"
 	"strings"
