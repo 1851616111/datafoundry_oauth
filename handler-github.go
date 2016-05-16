@@ -19,16 +19,20 @@ const (
 )
 
 //curl http://etcdsystem.servicebroker.dataos.io:2379/v2/keys/oauth/namespace/  -u asiainfoLDP:6ED9BA74-75FD-4D1B-8916-842CB936AC1A
-//curl http://127.0.0.1:9443/v1/github-redirect?code=d13f63cc79c2907f9e55\&state=xcv&namespace=oauthtest\&bearer=Uzl65t8jzNc46ZoZEqS4Rg8R9JVbQ5plOH7Nf0gsJV4
+//curl http://127.0.0.1:9443/v1/github-redirect?code=d13f63cc79c2907f9e55\&state=xcv&namespace=oauthtest\&bearer=Uzl65t8jzNc46ZoZEqS4Rg8R9JVbQ5plOH7Nf0gsJV4&redirect_url=https://baidu.com
 func githubHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	r.ParseForm()
-	var ns, bearer string
+	var ns, bearer, redirect_url string
 	if ns = r.FormValue("namespace"); strings.TrimSpace(ns) == "" {
 		retHttpCode(400, w, "param namespace must not be nil.\n")
 		return
 	}
 	if bearer = r.FormValue("bearer"); strings.TrimSpace(bearer) == "" {
 		retHttpCode(400, w, "param bearer must not be nil.\n")
+		return
+	}
+	if redirect_url = r.FormValue("redirect_url"); strings.TrimSpace(redirect_url) == "" {
+		retHttpCode(400, w, "param redirect_url must not be nil.\n")
 		return
 	}
 
@@ -99,7 +103,7 @@ func githubHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 		return
 	}
 
-	retHttpCode(200, w, "ok")
+	http.Redirect(w, r, redirect_url, 302)
 }
 
 //curl http://127.0.0.1:9443/v1/repos/github/owner -H  "Authorization: bearer Uzl65t8jzNc46ZoZEqS4Rg8R9JVbQ5plOH7Nf0gsJV4"
@@ -120,7 +124,7 @@ func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httproute
 	var userInfo map[string]string
 	if userInfo, err = getGithubInfo(user); err != nil {
 		if EtcdKeyNotFound(err) {
-			retHttpCode(401, w, "Gihub.com Unauthorized")
+			retHttpCode(1401, w, "Gihub.com Unauthorized")
 		}
 		retHttpCodef(400, w, "get user info err %s\n", err.Error())
 		return
