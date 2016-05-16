@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	Github_API_User		 = "https://api.github.com/user"
-	Github_API_User_Repos 	 = "https://api.github.com/users/%s/repos"
+	Github_API_User          = "https://api.github.com/user"
+	Github_API_User_Repos    = "https://api.github.com/users/%s/repos"
 	Github_API_Owner_Orgs    = "https://api.github.com/user/orgs"
 	Github_API_Org_Repos     = "https://api.github.com/orgs/%s/repos"
 	Github_API_Repo_Branches = "https://api.github.com/repos/%s/%s/branches"
@@ -33,7 +33,7 @@ func GetOwnerRepos(userInfo map[string]string) (*Repos, error) {
 
 	user, err := GetUserInfo(userInfo)
 	if err != nil {
-		return nil , err
+		return nil, err
 	}
 
 	credKey, credValue := getCredentials(userInfo)

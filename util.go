@@ -114,21 +114,21 @@ func generateGitlabName(username, gitlabHost string) string {
 	return fmt.Sprintf("%s-gitlab-%s", username, convertDFValidateName(gitlabHost))
 }
 
-func retHttpCodef(code int, w http.ResponseWriter, format string, a ...interface{}) {
-	if code != 200 {
-		w.WriteHeader(code)
-	}
+func retHttpCodef(code, bodyCode int, w http.ResponseWriter, format string, a ...interface{}) {
 
-	fmt.Fprintf(w, format, a...)
+	w.WriteHeader(code)
+	msg := fmt.Sprintf(`{"code":%d,"msg":"%s"}`, bodyCode, fmt.Sprintf(format, a...))
+
+	fmt.Fprintf(w, msg)
 	return
 }
 
-func retHttpCode(code int, w http.ResponseWriter, a ...interface{}) {
-	if code != 200 {
-		w.WriteHeader(code)
-	}
+func retHttpCode(code int, bodyCode int, w http.ResponseWriter, a ...interface{}) {
 
-	fmt.Fprint(w, a...)
+	w.WriteHeader(code)
+	msg := fmt.Sprintf(`{"code":%d,"msg":"%s"}`, bodyCode, fmt.Sprint(a...))
+
+	fmt.Fprintf(w, msg)
 	return
 }
 

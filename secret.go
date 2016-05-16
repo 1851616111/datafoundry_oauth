@@ -239,18 +239,18 @@ func updateSecret(s *api.Secret, o SecretOption) error {
 }
 
 type SecretTokenOptions struct {
-	NameSpace        string
-	UserName         string
-	SecretName       string
+	NameSpace  string
+	UserName   string
+	SecretName string
 
 	DataFoundryToken string
 	GitHubToken      string
 }
 
 type SecretSSHOptions struct {
-	NameSpace        string `json:"-"`
-	UserName         string `json:"-"`
-	SecretName       string `json:"secret"`
+	NameSpace  string `json:"-"`
+	UserName   string `json:"-"`
+	SecretName string `json:"secret"`
 
 	DataFoundryToken string `json:"-"`
 	PrivateKey       string `json:"-"`

@@ -23,7 +23,7 @@ func gitlabHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 
 	option := new(gitLabInfo)
 	if err := parseRequestBody(r, option); err != nil {
-		retHttpCodef(400, w, "read request body err %v", err)
+		retHttpCodef(400, 1400, w, "read request body err %v", err)
 		return
 	}
 
@@ -56,14 +56,14 @@ res:
 		case dump := <-ret_df:
 			count++
 			if dump.err != nil {
-				retHttpCodef(401, w, "unauthorized from datafoundry,  err %v\n", dump.err)
+				retHttpCodef(401, 1401, w, "unauthorized from datafoundry,  err %v", dump.err)
 				return
 			}
 			oUser = dump.filling
 		case dump := <-ret_gb:
 			count++
 			if dump.err != nil {
-				retHttpCodef(401, w, "unauthorized from gitlab %s,  err %v\n", option.Host, dump.err)
+				retHttpCodef(401, 1401, w, "unauthorized from gitlab %s,  err %v", option.Host, dump.err)
 				return
 			}
 		default:
@@ -75,11 +75,11 @@ res:
 
 	key := fmt.Sprintf("/df_service/%s/df_user/%s/oauth/gitlabs/info", DFHost_Key, oUser.Name)
 	if err := db.set(key, option); err != nil {
-		retHttpCodef(400, w, "store gitlab err %v", err.Error())
+		retHttpCodef(400, 1400, w, "store gitlab err %v", err.Error())
 		return
 	}
 
-	retHttpCodef(200, w, "ok")
+	retHttpCodef(200, 1200, w, "ok")
 }
 
 //curl http://127.0.0.1:9443/v1/gitlab/repos/owner?page=1 -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
@@ -91,13 +91,13 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 	var user *dfapi.User
 	var err error
 	if user, err = authDF(token); err != nil {
-		retHttpCodef(401, w, "auth err %s\n", err.Error())
+		retHttpCodef(401, 1401, w, "auth err %s", err.Error())
 		return
 	}
 
 	option, err := getGitLabOptionByDFUser(user.Name)
 	if err != nil {
-		retHttpCodef(400, w, "get gitlab info err %v", err.Error())
+		retHttpCodef(400, 1400, w, "get gitlab info err %v", err.Error())
 		return
 	}
 
@@ -105,17 +105,17 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 	var page int
 
 	if page, err = strconv.Atoi(p); err != nil {
-		retHttpCodef(400, w, "invalide param page %d", p)
+		retHttpCodef(400, 1400, w, "invalide param page %d", p)
 		return
 	}
 	if page < 1 {
-		retHttpCodef(400, w, "invalide param page %d", p)
+		retHttpCodef(400, 1400, w, "invalide param page %d", p)
 		return
 	}
 
 	projects, err := glApi.Project(option.Host, option.PrivateToken).ListProjects(uint32(page))
 	if err != nil {
-		retHttpCodef(400, w, "get projects err %v", err.Error())
+		retHttpCodef(400, 1400, w, "get projects err %v", err.Error())
 		return
 	}
 
@@ -130,11 +130,11 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 
 	b, err := json.Marshal(l)
 	if err != nil {
-		retHttpCodef(400, w, "convert projects err %v", err)
+		retHttpCodef(400, 1400, w, "convert projects err %v", err)
 		return
 	}
 
-	retHttpCodef(200, w, "%s", string(b))
+	retHttpCode(200, 1200, w, "%s", string(b))
 }
 
 //curl http://127.0.0.1:9443/v1/gitlab/repo/43/branches -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
@@ -143,41 +143,41 @@ func gitLabBranchHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	var projectId int
 	var err error
 	if projectId, err = strconv.Atoi(repo); err != nil {
-		retHttpCode(400, w, "invalide param repo ")
+		retHttpCode(400, 1400, w, "invalide param repo ")
 		return
 	}
 
 	if projectId < 0 {
-		retHttpCode(400, w, "invalide param repo ")
+		retHttpCode(400, 1400, w, "invalide param repo ")
 		return
 	}
 
 	token := r.Header.Get("Authorization")
 	var user *dfapi.User
 	if user, err = authDF(token); err != nil {
-		retHttpCodef(401, w, "auth err %s\n", err.Error())
+		retHttpCodef(401, 1401, w, "auth err %s", err.Error())
 		return
 	}
 
 	option, err := getGitLabOptionByDFUser(user.Name)
 	if err != nil {
-		retHttpCodef(400, w, "get gitlab info err %v", err.Error())
+		retHttpCodef(400, 1400, w, "get gitlab info err %v", err.Error())
 		return
 	}
 
 	branches, err := glApi.Branch(option.Host, option.PrivateToken).ListBranches(projectId)
 	if err != nil {
-		retHttpCodef(400, w, "get project branches err %v", err.Error())
+		retHttpCodef(400, 1400, w, "get project branches err %v", err.Error())
 		return
 	}
 
 	b, err := json.Marshal(branches)
 	if err != nil {
-		retHttpCodef(400, w, "convert branches err %v", err)
+		retHttpCodef(400, 1400, w, "convert branches err %v", err)
 		return
 	}
 
-	retHttpCodef(200, w, "%s", string(b))
+	retHttpCode(200, 1200, w, "%s", string(b))
 
 }
 
@@ -188,7 +188,7 @@ func gitLabBranchHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 func gitLabSecretHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	namespace := strings.TrimSpace(r.Header.Get("namespace"))
 	if namespace == "" {
-		retHttpCode(400, w, "param namespace must not be nil.\n")
+		retHttpCode(400, 1400, w, "param namespace must not be nil.")
 		return
 	}
 
@@ -198,27 +198,27 @@ func gitLabSecretHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	var err error
 	dfUser, err := authDF(authorization)
 	if err != nil {
-		retHttpCodef(401, w, "unauthorized from datafoundry, err %v\n", err)
+		retHttpCodef(401, 1401, w, "unauthorized from datafoundry, err %v", err)
 		return
 	}
 
 	bind := new(gitLabBindInfo)
 	if err := parseRequestBody(r, bind); err != nil {
-		retHttpCodef(400, w, "read request body err %v", err)
+		retHttpCodef(400, 1400, w, "read request body err %v", err)
 		return
 	}
 
 	//根据当前oauth的配置的DataFoundry服务器,查询当前用户绑定的Gitlab服务HostA
 	var gitLab *gitLabInfo
 	if gitLab, err = getGitLabOptionByDFUser(dfUser.Name); err != nil {
-		retHttpCodef(400, w, "find gilab host err %v", err.Error())
+		retHttpCodef(400, 1400, w, "find gilab host err %v", err.Error())
 		return
 	}
 
 	//HostA与用户提供的Host不一致,应该返回并定失败
 	if gitLab.Host != bind.Host {
 		//todo 一个用户对应多主机情况,需要向党莎确认
-		retHttpCodef(400, w, "unknow host %s %v", bind.Host, err.Error())
+		retHttpCodef(400, 1400, w, "unknow host %s %v", bind.Host, err.Error())
 		return
 	}
 
@@ -226,10 +226,10 @@ func gitLabSecretHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	ks, err := glApi.DeployKey(gitLab.Host, gitLab.PrivateToken).ListKeys(bind.Id)
 	if err != nil {
 		if gitlabapi.IsUnauthorized(err) {
-			retHttpCodef(401, w, "gitlab %s private_token invalid\n", bind.Host)
+			retHttpCodef(401, 1401, w, "gitlab %s private_token invalid", bind.Host)
 			return
 		}
-		retHttpCodef(400, w, "get gitlab deploy keys err %v", err.Error())
+		retHttpCodef(400, 1400, w, "get gitlab deploy keys err %v", err.Error())
 		return
 	}
 
@@ -263,7 +263,7 @@ retry:
 				//查询过程出错(网络,数据库等一场),则直接返回,因为不确定是否存储中存在之前使用的deploykey,所以不能往下走
 				errTryCount++
 				if errTryCount == 2 {
-					retHttpCodef(400, w, "get gitlab deploy key in store err %v", err.Error())
+					retHttpCodef(400, 1400, w, "get gitlab deploy key in store err %v", err.Error())
 					return
 				}
 				goto retry
@@ -282,12 +282,12 @@ retry:
 		}
 
 		if err := glApi.DeployKey(gitLab.Host, gitLab.PrivateToken).CreateKey(keyOption); err != nil {
-			retHttpCodef(400, w, "create deploy key err %v", err.Error())
+			retHttpCodef(400, 1400, w, "create deploy key err %v", err.Error())
 			return
 		}
 
 		if err := setDeployKey(DFHost_Key, dfUser.Name, bind.Host, deployKey); err != nil {
-			retHttpCodef(400, w, "save private key err %v", err.Error())
+			retHttpCodef(400, 1400, w, "save private key err %v", err.Error())
 			return
 		}
 	}
@@ -301,16 +301,16 @@ retry:
 	}
 
 	if err := option.Validate(); err != nil {
-		retHttpCodef(400, w, "validate datafoundry ssh secret option err %s\n", err.Error())
+		retHttpCodef(400, 1400, w, "validate datafoundry ssh secret option err %s", err.Error())
 		return
 	}
 
 	if err := upsertSecret(option); err != nil {
-		retHttpCodef(400, w, "create datafoundry ssh secret err %s\n", err.Error())
+		retHttpCodef(400, 1400, w, "create datafoundry ssh secret err %s", err.Error())
 		return
 	}
 
-	retHttpCode(200, w, fmt.Sprintf("{\"secret\":\"%s\"}", option.SecretName))
+	retHttpCode(200, 1200, w, fmt.Sprintf("{\"secret\":\"%s\"}", option.SecretName))
 }
 
 func getGitLabOptionByDFUser(name string) (*gitLabInfo, error) {
