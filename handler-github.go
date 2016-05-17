@@ -24,22 +24,22 @@ func githubHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	r.ParseForm()
 	var ns, bearer, redirect_url string
 	if ns = r.FormValue("namespace"); strings.TrimSpace(ns) == "" {
-		retHttpCode(400, 1400, w, "param namespace must not be nil.\n")
+		retHttpCode(400, 1400, w, "param namespace must not be nil.")
 		return
 	}
 	if bearer = r.FormValue("bearer"); strings.TrimSpace(bearer) == "" {
-		retHttpCode(400, 1400, w, "param bearer must not be nil.\n")
+		retHttpCode(400, 1400, w, "param bearer must not be nil.")
 		return
 	}
 	if redirect_url = r.FormValue("redirect_url"); strings.TrimSpace(redirect_url) == "" {
-		retHttpCode(400, 1400, w, "param redirect_url must not be nil.\n")
+		retHttpCode(400, 1400, w, "param redirect_url must not be nil.")
 		return
 	}
 
 	var user *api.User
 	var err error
 	if user, err = authDF("bearer " + bearer); err != nil {
-		retHttpCode(401, 1400, w, "unauthorized\n")
+		retHttpCode(401, 1400, w, "unauthorized")
 		return
 	}
 
@@ -92,32 +92,25 @@ func githubHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	}
 	go syncOauthUser(db, userInfo)
 
-	option := setTokenSecretOption(userInfo)
-	if err := option.Validate(); err != nil {
-		retHttpCodef(400, 1400, w, "validate datafoundry secret option err %v\n", err)
-		return
-	}
-
-	if err := upsertSecret(option); err != nil {
-		retHttpCodef(400, 1400, w, "operate datafoundry secret err %s\n", err.Error())
-		return
-	}
-
 	http.Redirect(w, r, redirect_url, 302)
 }
 
-//curl http://127.0.0.1:9443/v1/repos/github/owner -H  "Authorization: bearer Uzl65t8jzNc46ZoZEqS4Rg8R9JVbQ5plOH7Nf0gsJV4"
+//curl http://127.0.0.1:9443/v1/repos/github/owner?namespace=oauth -H  "Authorization: bearer yqL8Rp9tNLDiN-9sWaybex-oGolnwh9U3UnOEMptgpE"
 func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var user *api.User
 	var err error
+	var ns string
 	token := r.Header.Get("Authorization")
 	if len(token) == 0 {
-		retHttpCode(400, 1400, w, "no header Authorization\n")
+		retHttpCode(400, 1400, w, "no header Authorization")
 		return
 	}
-
 	if user, err = authDF(token); err != nil {
-		retHttpCodef(401, 1401, w, "auth err %s\n", err.Error())
+		retHttpCodef(401, 1401, w, "auth err %s", err.Error())
+		return
+	}
+	if ns = r.FormValue("namespace"); strings.TrimSpace(ns) == "" {
+		retHttpCode(400, 1400, w, "param namespace must not be nil.")
 		return
 	}
 
@@ -131,20 +124,96 @@ func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httproute
 		return
 	}
 
-	var repos *Repos
-	if repos, err = GetOwnerRepos(userInfo); err != nil {
-		retHttpCodef(400, 1400, w, "request github err %s", err.Error())
-		return
+	type Result struct {
+		code     int
+		bodyCode int
+		msg      string
 	}
 
-	newRepos := repos.Convert()
-	b, err := json.Marshal(newRepos)
-	if err != nil {
-		retHttpCodef(400, 1400, w, "convert return err %s", string(b))
+	//go concurrency
+	const TotalConcurrency = 2
+	result := make(chan Result, TotalConcurrency)
+	defer close(result)
+
+	go func(result chan Result) {
+
+		option := &SecretTokenOptions{
+			NameSpace:        ns,
+			UserName:         user.Name,
+			SecretName:       generateGithubName(user.Name),
+			DataFoundryToken: stripBearToken(token),
+			GitHubToken:      userInfo["credential_value"],
+		}
+
+		if err := option.Validate(); err != nil {
+			result <- Result{
+				code:     400,
+				bodyCode: 1400,
+				msg:      fmt.Sprintf("validate datafoundry secret option err %v", err),
+			}
+			return
+		}
+		if err := upsertSecret(option); err != nil {
+			result <- Result{
+				code:     400,
+				bodyCode: 1400,
+				msg:      fmt.Sprintf("operate datafoundry secret err %v", err),
+			}
+			return
+		}
+
+		result <- Result{
+			code:     200,
+			bodyCode: 1200,
+			msg:      fmt.Sprintf(`"secret":"%s"`, option.SecretName),
+		}
 		return
+	}(result)
+
+	go func(result chan Result) {
+
+		var repos *Repos
+		if repos, err = GetOwnerRepos(userInfo); err != nil {
+			result <- Result{
+				code:     400,
+				bodyCode: 1400,
+				msg:      fmt.Sprintf("request github err %v", err),
+			}
+			return
+		}
+
+		newRepos := repos.Convert()
+		b, err := json.Marshal(newRepos)
+		if err != nil {
+			result <- Result{
+				code:     400,
+				bodyCode: 1400,
+				msg:      fmt.Sprintf("convert return err %v", err),
+			}
+			return
+		}
+
+		result <- Result{
+			code:     200,
+			bodyCode: 1200,
+			msg:      fmt.Sprintf(`"infos":%s`, string(b)),
+		}
+		return
+	}(result)
+
+	msg := []string{}
+	for i := 1; i <= TotalConcurrency; i++ {
+		select {
+		case res := <-result:
+			if res.code != 200 {
+				retHttpCode(res.code, res.bodyCode, w, res.msg)
+				return
+			}
+			msg = append(msg, res.msg)
+		}
 	}
 
-	retHttpCodef(200, 1200, w, "%s", string(b))
+	retHttpCodeJson(200, 1200, w, fmt.Sprintf("{%s,%s}", msg[0], msg[1]))
 }
 
 func githubOrgReposHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -216,7 +285,7 @@ func getGithubBranchHandler(w http.ResponseWriter, r *http.Request, ps httproute
 		return
 	}
 
-	retHttpCode(200, 1200, w, "%s", string(b))
+	retHttpCode(200, 1200, w, string(b))
 }
 
 //ex. /v1/github-redirect?code=8fdf6827d52a1aca5052&state=ppp
