@@ -185,7 +185,7 @@ func githubOrgReposHandler(w http.ResponseWriter, r *http.Request, _ httprouter.
 		return
 	}
 
-	retHttpCode(200, 1200, w, "%s", string(b))
+	retHttpCode(200, 1200, w, string(b))
 }
 
 func getGithubBranchHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
