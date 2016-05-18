@@ -146,7 +146,7 @@ type deployKey struct {
 }
 
 func stripBearToken(authValue string) string {
-	return strings.TrimSpace(strings.TrimLeft(authValue, "bearer "))
+	return strings.TrimSpace(strings.TrimLeft(authValue, "Bearer "))
 }
 
 func etcdFormatUrl(url string) string {
