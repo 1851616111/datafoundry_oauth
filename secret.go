@@ -9,22 +9,31 @@ import (
 )
 
 const (
-	PasswordSecret    = "password"
-	GithubSecretLabel = "openshift.io.oauth/github"
-	GitLabSecretLabel = "openshift.io.oauth/gitlab"
-	SecretsURL        = "/api/v1/namespaces/%s/secrets"
-	SecretURL         = "/api/v1/namespaces/%s/secrets/%s"
+	PasswordSecret         = "password"
+	GithubSecretLabelKey   = "openshift.io.oauth/github"
+	GithubSecretLabelValue = "github"
+	GitLabSecretLabel      = "openshift.io.oauth/gitlab"
+	SecretsURL             = "/api/v1/namespaces/%s/secrets"
+	SecretURL              = "/api/v1/namespaces/%s/secrets/%s"
+	DFParamLabel           = "labelSelector"
 )
 
 var (
 	post Post = httpPost
 	get  Get  = httpGet
 	put  Put  = httpPUT
+
+	GithubSecretLabel = &Label{
+		key:      GithubSecretLabelKey,
+		operator: "=",
+		value:    GithubSecretLabelValue,
+	}
 )
 
 type secret interface {
 	create(s *api.Secret, token string) error
 	get(namespace, name string, token string) (*api.Secret, error)
+	list(namespace, option GetOption, token string) (*api.SecretList, error)
 	update(s *api.Secret, token string) error
 }
 
@@ -65,6 +74,36 @@ func (p Post) create(s *api.Secret, token string) error {
 	return nil
 }
 
+type Label struct {
+	key      string
+	value    string
+	operator string
+}
+
+type GetOption struct {
+	Label *Label
+	Name  string
+}
+
+func (l *Label) getLabel() string {
+	return DFParamLabel + "=" + l.key + l.operator + l.value
+}
+
+func getUrl(namespace string, option GetOption) (string, error) {
+	if option.Name == "" && option.Label == nil {
+		return "", errors.New("param option must not all nil.")
+	}
+
+	apiURL := ""
+	if option.Label != nil {
+		apiURL = setSecretURL(namespace) + "?" + option.Label.getLabel()
+	} else {
+		apiURL = setSecretURLWithName(namespace, option.Name)
+	}
+
+	return apiURL, nil
+}
+
 func (g Get) get(namespace, name string, token string) (*api.Secret, error) {
 	apiURL := setSecretURLWithName(namespace, name)
 	b, err := g(apiURL, "Authorization", fmt.Sprintf("Bearer %s", token))
@@ -80,6 +119,25 @@ func (g Get) get(namespace, name string, token string) (*api.Secret, error) {
 	return secret, nil
 }
 
+//labelSelector
+func (g Get) list(namespace string, option GetOption, token string) (*api.SecretList, error) {
+
+	var url string
+	var err error
+	if url, err = getUrl(namespace, option); err != nil {
+		return nil, err
+	}
+	b, err := g(url, "Authorization", fmt.Sprintf("Bearer %s", token))
+	if err != nil {
+		return nil, err
+	}
+	secrets := &api.SecretList{}
+	if err = json.Unmarshal(b, secrets); err != nil {
+		return nil, err
+	}
+	return secrets, nil
+}
+
 func (o *SecretTokenOptions) NewSecret() *api.Secret {
 	secret := &api.Secret{}
 	secret.Kind = "Secret"
@@ -89,7 +147,7 @@ func (o *SecretTokenOptions) NewSecret() *api.Secret {
 	secret.Type = api.SecretTypeOpaque
 
 	secret.Labels = map[string]string{
-		GithubSecretLabel: o.SecretName,
+		GithubSecretLabelKey: GithubSecretLabelValue,
 	}
 
 	secret.Data = map[string][]byte{
@@ -192,6 +250,14 @@ func (o *SecretTokenOptions) GetToken() string {
 func createSecret(o SecretOption) error {
 	secret := o.NewSecret()
 	return post.create(secret, o.GetDFToken())
+}
+
+func listSecrets(o SecretOption) (*api.SecretList, error) {
+	option := GetOption{
+		Label: GithubSecretLabel,
+	}
+
+	return get.list(o.GetDFNamespace(), option, o.GetDFToken())
 }
 
 func getSecret(o SecretOption) (*api.Secret, error) {

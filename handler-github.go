@@ -95,7 +95,7 @@ func githubHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	http.Redirect(w, r, redirect_url, 302)
 }
 
-//curl http://127.0.0.1:9443/v1/repos/github/owner?namespace=oauth -H  "Authorization: bearer yqL8Rp9tNLDiN-9sWaybex-oGolnwh9U3UnOEMptgpE"
+//curl http://127.0.0.1:9443/v1/repos/github/owner?namespace=oauth -H  "Authorization: Bearer RYkuqpKForts4Wv8zosvjoNMZa_QMd32AEnJ6s7GgD4"
 func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var user *api.User
 	var err error
@@ -124,28 +124,13 @@ func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httproute
 		return
 	}
 
-	type Result struct {
-		code     int
-		bodyCode int
-		msg      string
-	}
-
 	//go concurrency
 	const TotalConcurrency = 2
 	result := make(chan Result, TotalConcurrency)
-	done := make(chan struct{},1)
+	done := make(chan struct{}, 1)
 	defer close(result)
 
-	var Done = func (done <-chan struct{}) bool {
-		select{
-		case  <-done:
-			return true
-		default:
-			return false
-		}
-	}
 	go func(result chan Result) {
-
 		option := &SecretTokenOptions{
 			NameSpace:        ns,
 			UserName:         user.Name,
@@ -155,76 +140,44 @@ func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httproute
 		}
 
 		if err := option.Validate(); err != nil {
-			if Done(done) {
-				return
-			}
-			result <- Result{
-				code:     400,
-				bodyCode: 1400,
-				msg:      fmt.Sprintf("validate datafoundry secret option err %v", err),
-			}
-			return
-		}
-		if err := upsertSecret(option); err != nil {
-			if Done(done) {
-				return
-			}
-			result <- Result{
-				code:     400,
-				bodyCode: 1400,
-				msg:      fmt.Sprintf("operate datafoundry secret err %v", err),
-			}
+			Done(done, result, 400, 1400, fmt.Sprintf("validate datafoundry secret option err %v", err))
 			return
 		}
 
-		if Done(done) {
+		secrets, err := listSecrets(option)
+		if err != nil {
+			Done(done, result, 400, 1400, fmt.Sprintf("list secret err %v", err))
 			return
 		}
-		result <- Result{
-			code:     200,
-			bodyCode: 1200,
-			msg:      fmt.Sprintf(`"secret":"%s"`, option.SecretName),
+
+		if len(secrets.Items) == 0 {
+			if err := createSecret(option); err != nil {
+				 Done(done, result, 400, 1400, fmt.Sprintf("create secret  err %v", err))
+				return
+			}
+			Done(done, result, 200, 1200, fmt.Sprintf(`"secret":"%s"`, option.SecretName))
+			return
 		}
-		return
+
+		Done(done, result, 200, 1200, fmt.Sprintf(`"secret":"%s"`, secrets.Items[0].Name))
 	}(result)
 
 	go func(result chan Result) {
 
 		var repos *Repos
 		if repos, err = GetOwnerRepos(userInfo); err != nil {
-			if Done(done) {
-				return
-			}
-			result <- Result{
-				code:     400,
-				bodyCode: 1400,
-				msg:      fmt.Sprintf("request github err %v", err),
-			}
+			Done(done, result, 400, 1400, fmt.Sprintf("request github err %v", err))
 			return
 		}
 
 		newRepos := repos.Convert()
 		b, err := json.Marshal(newRepos)
 		if err != nil {
-			if Done(done) {
-				return
-			}
-			result <- Result{
-				code:     400,
-				bodyCode: 1400,
-				msg:      fmt.Sprintf("convert return err %v", err),
-			}
+			 Done(done, result, 400, 1400, fmt.Sprintf("convert return err %v", err))
 			return
 		}
 
-		if Done(done) {
-			return
-		}
-		result <- Result{
-			code:     200,
-			bodyCode: 1200,
-			msg:      fmt.Sprintf(`"infos":%s`, string(b)),
-		}
+		Done(done, result, 200, 1200, fmt.Sprintf(`"infos":%s`, string(b)))
 		return
 	}(result)
 
@@ -233,7 +186,7 @@ func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httproute
 		select {
 		case res := <-result:
 			if res.code != 200 {
-				done <- struct {}{}
+				done <- struct{}{}
 				retHttpCode(res.code, res.bodyCode, w, res.msg)
 				return
 			}
@@ -282,7 +235,7 @@ func githubOrgReposHandler(w http.ResponseWriter, r *http.Request, _ httprouter.
 		return
 	}
 
-	retHttpCode(200, 1200, w, string(b))
+	retHttpCodeJson(200, 1200, w, string(b))
 }
 
 func getGithubBranchHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -313,7 +266,7 @@ func getGithubBranchHandler(w http.ResponseWriter, r *http.Request, ps httproute
 		return
 	}
 
-	retHttpCode(200, 1200, w, string(b))
+	retHttpCodeJson(200, 1200, w, string(b))
 }
 
 //ex. /v1/github-redirect?code=8fdf6827d52a1aca5052&state=ppp

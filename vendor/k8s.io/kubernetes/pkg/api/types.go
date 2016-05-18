@@ -105,3 +105,10 @@ type ObjectMeta struct {
 	// comments on Labels for details.
 	Annotations map[string]string `json:"annotations,omitempty"`
 }
+
+type SecretList struct {
+	unversioned.TypeMeta `json:",inline"`
+	unversioned.ListMeta `json:"metadata,omitempty"`
+
+	Items []Secret `json:"items"`
+}
