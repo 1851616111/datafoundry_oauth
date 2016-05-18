@@ -133,8 +133,17 @@ func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httproute
 	//go concurrency
 	const TotalConcurrency = 2
 	result := make(chan Result, TotalConcurrency)
+	done := make(chan struct{},1)
 	defer close(result)
 
+	var Done = func (done <-chan struct{}) bool {
+		select{
+		case  <-done:
+			return true
+		default:
+			return false
+		}
+	}
 	go func(result chan Result) {
 
 		option := &SecretTokenOptions{
@@ -146,6 +155,9 @@ func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httproute
 		}
 
 		if err := option.Validate(); err != nil {
+			if Done(done) {
+				return
+			}
 			result <- Result{
 				code:     400,
 				bodyCode: 1400,
@@ -154,6 +166,9 @@ func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httproute
 			return
 		}
 		if err := upsertSecret(option); err != nil {
+			if Done(done) {
+				return
+			}
 			result <- Result{
 				code:     400,
 				bodyCode: 1400,
@@ -162,6 +177,9 @@ func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httproute
 			return
 		}
 
+		if Done(done) {
+			return
+		}
 		result <- Result{
 			code:     200,
 			bodyCode: 1200,
@@ -174,6 +192,9 @@ func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httproute
 
 		var repos *Repos
 		if repos, err = GetOwnerRepos(userInfo); err != nil {
+			if Done(done) {
+				return
+			}
 			result <- Result{
 				code:     400,
 				bodyCode: 1400,
@@ -185,6 +206,9 @@ func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httproute
 		newRepos := repos.Convert()
 		b, err := json.Marshal(newRepos)
 		if err != nil {
+			if Done(done) {
+				return
+			}
 			result <- Result{
 				code:     400,
 				bodyCode: 1400,
@@ -193,6 +217,9 @@ func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httproute
 			return
 		}
 
+		if Done(done) {
+			return
+		}
 		result <- Result{
 			code:     200,
 			bodyCode: 1200,
@@ -206,6 +233,7 @@ func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httproute
 		select {
 		case res := <-result:
 			if res.code != 200 {
+				done <- struct {}{}
 				retHttpCode(res.code, res.bodyCode, w, res.msg)
 				return
 			}
