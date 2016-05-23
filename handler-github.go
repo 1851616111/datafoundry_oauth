@@ -118,9 +118,10 @@ func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httproute
 	if userInfo, err = getGithubInfo(user); err != nil {
 		if EtcdKeyNotFound(err) {
 			url := fmt.Sprintf("https://github.com/login/oauth/authorize?client_id=%s&scope=repo,user:email&state=${{}}&redirect_uri=%s", GithubClientID, GithubRedirectUrl)
-			retHttpCode(400, 1401, w, "Gihub.com Unauthorized/AuthorizationUrl=%s", url)
+			retHttpCode(400, 1401, w, url)
+		} else {
+			retHttpCodef(400, 1400, w, "get user info err %s", err.Error())
 		}
-		retHttpCodef(400, 1400, w, "get user info err %s", err.Error())
 		return
 	}
 
@@ -152,7 +153,7 @@ func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httproute
 
 		if len(secrets.Items) == 0 {
 			if err := createSecret(option); err != nil {
-				 Done(done, result, 400, 1400, fmt.Sprintf("create secret  err %v", err))
+				Done(done, result, 400, 1400, fmt.Sprintf("create secret  err %v", err))
 				return
 			}
 			Done(done, result, 200, 1200, fmt.Sprintf(`"secret":"%s"`, option.SecretName))
@@ -173,7 +174,7 @@ func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httproute
 		newRepos := repos.Convert()
 		b, err := json.Marshal(newRepos)
 		if err != nil {
-			 Done(done, result, 400, 1400, fmt.Sprintf("convert return err %v", err))
+			Done(done, result, 400, 1400, fmt.Sprintf("convert return err %v", err))
 			return
 		}
 
