@@ -11,10 +11,65 @@ It describe the relationships between private GitLab and DataFoundry.
  1.  I want a DataFoundry user could bind just one GitLab account on one GitLab.
  
 ## API
+
+# Get Owner Repos
+
+    [GET] /v1/repos/gitlab/owner
+    
+**Header**
+
+|     Key         |     Value      |  Description                     |  Must  |
+| --------------- | -------------- | -------------------------------  | ------ |
+| Authorization   | bearer TOKEN   |  TOKEN is DataFoundry Token      |  true  |
  
+ 
+**Curl**
+
+curl http://datafoundry-oauth.app.dataos.io/v1/gitlab/repos/owner -H "Authorization:Bearer yDAWN1Nkj4RgCnmNR1dwY0f7nYP8_8oQonM5ahnMh0E"
+
+
+# Get Orgs Repos
+
+    [GET] /v1/repos/gitlab/orgs
+    
+**Header**
+
+|     Key         |     Value      |  Description                     |  Must  |
+| --------------- | -------------- | -------------------------------  | ------ |
+| Authorization   | bearer TOKEN   |  TOKEN is DataFoundry Token      |  true  |
+ 
+ 
+**Curl**
+
+curl http://datafoundry-oauth.app.dataos.io/v1/gitlab/repos/orgs -H "Authorization:Bearer yDAWN1Nkj4RgCnmNR1dwY0f7nYP8_8oQonM5ahnMh0E"
+
+
+# Get A Repo's Branches
+
+    [GET] /v1/repos/gitlab/:repo/branches
+    
+**Param**
+
+|     Name      |     Type      |  Description                     |  Must  |
+| ------------- | ------------- | -------------------------------  | ------ |
+| repo          |     string    |  gitlab project(repo) id         |  true  |
+
+    
+**Header**
+
+|     Key         |     Value      |  Description                     |  Must  |
+| --------------- | -------------- | -------------------------------  | ------ |
+| Authorization   | bearer TOKEN   |  TOKEN is DataFoundry Token      |  true  |
+ 
+ 
+**Curl**
+
+curl http://datafoundry-oauth.app.dataos.io/v1/gitlab/repo/43/branches -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
+
+  
 # Provide a GitLib
  
-    [POST] /v1/gitlab 
+    [POST] /v1/repos/gitlab
 
 **Param**
 
