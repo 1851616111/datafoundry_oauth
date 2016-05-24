@@ -37,15 +37,12 @@ type Namespace struct {
 
 type Project struct {
 	Id                int        `json:"id"`
-	Description       string     `json:"description"`
 	Public            bool       `json:"public"`
 	SshUrlToRepo      string     `json:"ssh_url_to_repo"`
-	WebUrl            string     `json:"web_url"`
 	Owner             *Owner     `json:"owner,omitempty"`
 	Name              string     `json:"name"`
 	NameWithNamespace string     `json:"name_with_namespace"`
 	Namespace         *Namespace `json:"namespace"`
-	AvatarUrl         string     `json:"avatar_ur"`
 }
 
 type Branch struct {

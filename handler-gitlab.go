@@ -17,6 +17,7 @@ var (
 	glApi = gitlabapi.ClientFactory()
 )
 
+//curl http://127.0.0.1:9443/v1/gitlab  -d '{"host":"https://code.dataos.io", "user":"panxy3","private_token":"6co3Kz3r7Ns4RuNBk_9y"}' -H "Authorization:bearer yDAWN1Nkj4RgCnmNR1dwY0f7nYP8_8oQonM5ahnMh0E"
 //curl http://127.0.0.1:9443/v1/gitlab  -d '{"host":"https://code.dataos.io", "user":"mengjing","private_token":"fXYznpUCTQQe5sjM4FWm"}' -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
 func gitlabHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	authorization := r.Header.Get("Authorization")
@@ -82,10 +83,11 @@ res:
 	retHttpCodef(200, 1200, w, "ok")
 }
 
-//curl http://127.0.0.1:9443/v1/gitlab/repos/owner?page=1 -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
-//curl http://127.0.0.1:9443/v1/gitlab/repos/org?page=2 -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
+//curl http://127.0.0.1:9443/v1/gitlab/repos/owner -H "Authorization:Bearer yDAWN1Nkj4RgCnmNR1dwY0f7nYP8_8oQonM5ahnMh0E"
+//curl http://127.0.0.1:9443/v1/gitlab/repos/orgs -H "Authorization:Bearer yDAWN1Nkj4RgCnmNR1dwY0f7nYP8_8oQonM5ahnMh0E"
+//curl http://127.0.0.1:9443/v1/gitlab/repos/orgs -H "Authorization:Bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
 func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	userType := ps.ByName("user")
+	userType := ps.ByName("repo")
 
 	token := r.Header.Get("Authorization")
 	var user *dfapi.User
@@ -97,23 +99,16 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 
 	option, err := getGitLabOptionByDFUser(user.Name)
 	if err != nil {
-		retHttpCodef(400, 1400, w, "get gitlab info err %v", err.Error())
+		if EtcdKeyNotFound(err) {
+			retHttpCode(400, 1401, w, "unauthorized")
+		} else {
+			retHttpCodef(400, 1400, w, "get user info err %s", err.Error())
+		}
+
 		return
 	}
 
-	p := r.FormValue("page")
-	var page int
-
-	if page, err = strconv.Atoi(p); err != nil {
-		retHttpCodef(400, 1400, w, "invalide param page %d", p)
-		return
-	}
-	if page < 1 {
-		retHttpCodef(400, 1400, w, "invalide param page %d", p)
-		return
-	}
-
-	projects, err := glApi.Project(option.Host, option.PrivateToken).ListProjects(uint32(page))
+	projects, err := glApi.Project(option.Host, option.PrivateToken).ListProjects()
 	if err != nil {
 		retHttpCodef(400, 1400, w, "get projects err %v", err.Error())
 		return
@@ -121,7 +116,7 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 
 	var l interface{}
 	switch userType {
-	case "org":
+	case "orgs":
 		l = gitlabapi.ConverOrgProjects(projects)
 	case "owner":
 		l = gitlabapi.ConverOwnerProjects(projects)
@@ -134,7 +129,7 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 		return
 	}
 
-	retHttpCode(200, 1200, w, "%s", string(b))
+	retHttpCodeJson(200, 1200, w, string(b))
 }
 
 //curl http://127.0.0.1:9443/v1/gitlab/repo/43/branches -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
@@ -177,7 +172,7 @@ func gitLabBranchHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		return
 	}
 
-	retHttpCode(200, 1200, w, "%s", string(b))
+	retHttpCodeJson(200, 1200, w, string(b))
 
 }
 
@@ -217,7 +212,6 @@ func gitLabSecretHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 	//HostA与用户提供的Host不一致,应该返回并定失败
 	if gitLab.Host != bind.Host {
-		//todo 一个用户对应多主机情况,需要向党莎确认
 		retHttpCodef(400, 1400, w, "unknow host %s %v", bind.Host, err.Error())
 		return
 	}

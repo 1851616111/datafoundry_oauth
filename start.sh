@@ -14,7 +14,7 @@ function env::export() {
         fi
 
         if [ $1 = DATAFOUNDRY_HOST_ADDR ]; then
-            export DATAFOUNDRY_HOST_ADDR=https://lab.dataos.io:8443
+            export DATAFOUNDRY_HOST_ADDR=https://dev.dataos.io:8443
         fi
 
         if [ $1 = ETCD_HTTP_ADDR ]; then

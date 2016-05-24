@@ -5,7 +5,7 @@ import "fmt"
 const (
 	Gitlab_Credential_Key       = "PRIVATE-TOKEN"
 	GitLab_Api_Url_Path_User    = "/api/v3/user"
-	GitLab_Api_Url_Path_Project = "/api/v3/projects/owned"
+	GitLab_Api_Url_Path_Project = "/api/v3/projects"
 	GitLab_Api_Url_Path_Keys    = "/api/v3/projects/%d/keys"
 	GitLab_Api_Url_Path_Branch  = "/api/v3/projects/%d/repository/branches"
 )
@@ -61,17 +61,28 @@ func (c *HttpFactory) Project(host, privateToken string) Projects {
 }
 
 type Projects interface {
-	ListProjects(page uint32) ([]Project, error)
+	ListProjects() ([]Project, error)
 }
 
-func (r *RestClient) ListProjects(page uint32) ([]Project, error) {
-	projects := new([]Project)
-	url := fmt.Sprintf("%s?page=%d", r.Url, page)
-	if err := r.Client.GetJson(projects, url, r.Credential.Key, r.Credential.Value); err != nil {
-		return nil, err
+func (r *RestClient) ListProjects() ([]Project, error) {
+	projects := []Project{}
+
+	page := 1
+	for {
+		ps := new([]Project)
+		url := fmt.Sprintf("%s?page=%d", r.Url, page)
+		if err := r.Client.GetJson(ps, url, r.Credential.Key, r.Credential.Value); err != nil {
+			return projects, err
+		}
+		if len(*ps) > 0 {
+			projects = append(projects, *ps...)
+			page = page + 1
+			continue
+		}
+
+		return projects, nil
 	}
 
-	return *projects, nil
 }
 
 type BranchInterface interface {
