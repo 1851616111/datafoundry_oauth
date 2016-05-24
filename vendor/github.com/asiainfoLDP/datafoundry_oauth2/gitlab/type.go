@@ -45,8 +45,14 @@ type Project struct {
 	Namespace         *Namespace `json:"namespace"`
 }
 
+type commit struct {
+	Id      string `json:"id"`
+	//Message string `json:"message"`
+}
+
 type Branch struct {
-	Name string `json:"name"`
+	Name   string `json:"name"`
+	Commit commit `json:"commit"`
 }
 
 type DeployKey struct {
