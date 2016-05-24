@@ -33,15 +33,15 @@ func init() {
 func main() {
 	router := router.New()
 
-	router.GET("/v1/github-redirect", githubHandler)
+	router.GET("/v1/repos/github-redirect", githubHandler)
 	router.GET("/v1/repos/github/owner", githubOwnerReposHandler)
 	router.GET("/v1/repos/github/orgs", githubOrgReposHandler)
 	router.GET("/v1/repos/github/users/:user/repos/:repo", getGithubBranchHandler)
 
-	router.POST("/v1/gitlab", gitlabHandler)
-	router.GET("/v1/gitlab/repos/:repo", gitLabOwnerReposHandler)
-	router.GET("/v1/gitlab/repos/:repo/branches", gitLabBranchHandler)
-	router.POST("/v1/gitlab/authorize/deploy", gitLabSecretHandler)
+	router.POST("/v1/repos/gitlab", gitlabHandler)
+	router.GET("/v1/repos/gitlab/:repo", gitLabOwnerReposHandler)
+	router.GET("/v1/repos/gitlab/:repo/branches", gitLabBranchHandler)
+	router.POST("/v1/repos/gitlab/authorize/deploy", gitLabSecretHandler)
 
 	log.Fatal(http.ListenAndServe(":9443", router))
 
