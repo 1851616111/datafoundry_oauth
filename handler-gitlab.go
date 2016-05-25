@@ -57,14 +57,14 @@ res:
 		case dump := <-ret_df:
 			count++
 			if dump.err != nil {
-				retHttpCodef(401, 1401, w, "unauthorized from datafoundry,  err %v", dump.err)
+				retHttpCodef(400, 401, w, "unauthorized from datafoundry,  err %v", dump.err)
 				return
 			}
 			oUser = dump.filling
 		case dump := <-ret_gb:
 			count++
 			if dump.err != nil {
-				retHttpCodef(401, 1401, w, "unauthorized from gitlab %s,  err %v", option.Host, dump.err)
+				retHttpCodef(400, 1401, w, "unauthorized from gitlab %s,  err %v", option.Host, dump.err)
 				return
 			}
 		default:
