@@ -42,7 +42,7 @@ func main() {
 	router.POST("/v1/repos/gitlab", gitlabHandler)
 	router.GET("/v1/repos/gitlab/:repo", gitLabOwnerReposHandler)
 	router.GET("/v1/repos/gitlab/:repo/branches", gitLabBranchHandler)
-	router.POST("/v1/repos/gitlab/authorize/deploy", gitLabLoginHandler)
+	router.POST("/v1/repos/gitlab/authorize/deploy", gitLabSecretHandler)
 
 	router.POST("/v1/repos/gitlab/login", gitLabLoginHandler)
 
