@@ -84,7 +84,7 @@ res:
 }
 
 //curl http://127.0.0.1:9443/v1/repos/gitlab/owner -H "Authorization:Bearer i1TerZwHQSsveIrHs53wr6lKdzxbJL2mVNCu8fs5Ao0"
-//curl http://127.0.0.1:9443/v1/repos/gitlab/orgs -H "Authorization:Bearer yDAWN1Nkj4RgCnmNR1dwY0f7nYP8_8oQonM5ahnMh0E"
+//curl http://127.0.0.1:9443/v1/repos/gitlab/orgs -H "Authorization:Bearer i1TerZwHQSsveIrHs53wr6lKdzxbJL2mVNCu8fs5Ao0"
 //curl http://127.0.0.1:9443/v1/repos/gitlab/orgs -H "Authorization:Bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
 func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	userType := ps.ByName("repo")
@@ -114,16 +114,25 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 		return
 	}
 
-	var l interface{}
+	var p interface{}
 	switch userType {
 	case "orgs":
-		l = gitlabapi.ConverOrgProjects(projects)
+		p = gitlabapi.ConverOrgProjects(projects)
 	case "owner":
-		l = gitlabapi.ConverOwnerProjects(projects)
-
+		p = gitlabapi.ConverOwnerProjects(projects)
 	}
 
-	b, err := json.Marshal(l)
+	type ret struct {
+		Host string      `json:"host"`
+		Info interface{} `json:"infos"`
+	}
+
+	rt := ret{
+		Host: option.Host,
+		Info: p,
+	}
+
+	b, err := json.Marshal(rt)
 	if err != nil {
 		retHttpCodef(400, 1400, w, "convert projects err %v", err)
 		return
