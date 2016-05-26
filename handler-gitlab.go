@@ -17,8 +17,8 @@ var (
 	glApi = gitlabapi.ClientFactory()
 )
 
-//curl http://127.0.0.1:9443/v1/gitlab  -d '{"host":"https://code.dataos.io", "user":"panxy3","private_token":"6co3Kz3r7Ns4RuNBk_9y"}' -H "Authorization:bearer yDAWN1Nkj4RgCnmNR1dwY0f7nYP8_8oQonM5ahnMh0E"
-//curl http://127.0.0.1:9443/v1/gitlab  -d '{"host":"https://code.dataos.io", "user":"mengjing","private_token":"fXYznpUCTQQe5sjM4FWm"}' -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
+//curl http://127.0.0.1:9443/v1/repos/gitlab  -d '{"host":"https://code.dataos.io", "user":"root","private_token":"hvXbXHKTPNxqzUDuSyLw"}' -H "Authorization:bearer i1TerZwHQSsveIrHs53wr6lKdzxbJL2mVNCu8fs5Ao0"
+//curl http://127.0.0.1:9443/v1/repos/gitlab  -d '{"host":"https://code.dataos.io", "user":"mengjing","private_token":"fXYznpUCTQQe5sjM4FWm"}' -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
 func gitlabHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	authorization := r.Header.Get("Authorization")
 
@@ -83,9 +83,9 @@ res:
 	retHttpCodef(200, 1200, w, "ok")
 }
 
-//curl http://127.0.0.1:9443/v1/gitlab/repos/owner -H "Authorization:Bearer yDAWN1Nkj4RgCnmNR1dwY0f7nYP8_8oQonM5ahnMh0E"
-//curl http://127.0.0.1:9443/v1/gitlab/repos/orgs -H "Authorization:Bearer yDAWN1Nkj4RgCnmNR1dwY0f7nYP8_8oQonM5ahnMh0E"
-//curl http://127.0.0.1:9443/v1/gitlab/repos/orgs -H "Authorization:Bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
+//curl http://127.0.0.1:9443/v1/repos/gitlab/owner -H "Authorization:Bearer i1TerZwHQSsveIrHs53wr6lKdzxbJL2mVNCu8fs5Ao0"
+//curl http://127.0.0.1:9443/v1/repos/gitlab/orgs -H "Authorization:Bearer yDAWN1Nkj4RgCnmNR1dwY0f7nYP8_8oQonM5ahnMh0E"
+//curl http://127.0.0.1:9443/v1/repos/gitlab/orgs -H "Authorization:Bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
 func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	userType := ps.ByName("repo")
 

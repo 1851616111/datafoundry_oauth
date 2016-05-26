@@ -11,6 +11,7 @@ import (
 var (
 	tokenConfig                                           Config
 	GithubRedirectUrl, GithubClientID, GithubClientSecret string
+	dbConf                                                storeConfig
 	db                                                    Store
 	DFHost_API                                            string
 	DFHost_Key                                            string
@@ -59,14 +60,14 @@ func initOauthConfig() {
 }
 
 func initStorage() {
-	c := storeConfig{
+	dbConf = storeConfig{
 		Addr:   httpAddrMaker(EtcdStorageEnv.Get("ETCD_HTTP_ADDR", nil)),
 		Port:   EtcdStorageEnv.Get("ETCD_HTTP_PORT", nil),
 		User:   EtcdStorageEnv.Get("ETCD_USER", nil),
 		Passwd: EtcdStorageEnv.Get("ETCD_PASSWORD", nil),
 	}
 
-	db = c.newClient()
+	refreshDB()
 	fmt.Println("oauth init storage config success")
 }
 
