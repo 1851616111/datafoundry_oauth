@@ -122,7 +122,9 @@ func httpAction(method, url string, body []byte, credential ...string) ([]byte, 
 		return nil, fmt.Errorf("[http] err %s, %s\n", url, err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set(credential[0], credential[1])
+	if len(credential) == 2 {
+		req.Header.Set(credential[0], credential[1])
+	}
 	resp, err = http.DefaultClient.Do(req)
 
 	if err != nil {

@@ -88,3 +88,9 @@ type Credential struct {
 	Key   string
 	Value string
 }
+
+type Session struct {
+	Name         string `json:"name"`
+	UserName     string `json:"username"`
+	PrivateToken string `json:"private_token"`
+}

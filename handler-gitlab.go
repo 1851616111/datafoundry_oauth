@@ -4,11 +4,13 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"net/http"
 
+	"bytes"
 	"encoding/json"
 	"fmt"
 	gitlabapi "github.com/asiainfoLDP/datafoundry_oauth2/gitlab"
 	gitlabutil "github.com/asiainfoLDP/datafoundry_oauth2/util"
 	dfapi "github.com/openshift/origin/pkg/user/api/v1"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -19,7 +21,7 @@ var (
 
 //curl http://127.0.0.1:9443/v1/repos/gitlab  -d '{"host":"https://code.dataos.io", "user":"root","private_token":"hvXbXHKTPNxqzUDuSyLw"}' -H "Authorization:bearer i1TerZwHQSsveIrHs53wr6lKdzxbJL2mVNCu8fs5Ao0"
 //curl http://127.0.0.1:9443/v1/repos/gitlab  -d '{"host":"https://code.dataos.io", "user":"mengjing","private_token":"fXYznpUCTQQe5sjM4FWm"}' -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
-func gitlabHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func gitlabHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	authorization := r.Header.Get("Authorization")
 
 	option := new(gitLabInfo)
@@ -313,7 +315,55 @@ retry:
 		return
 	}
 
-	retHttpCode(200, 1200, w, fmt.Sprintf("{\"secret\":\"%s\"}", option.SecretName))
+	retHttpCodef(200, 1200, w, fmt.Sprintf("{\"secret\":\"%s\"}", option.SecretName))
+}
+
+//curl -XPOST  http://127.0.0.1:9443/v1/repos/gitlab/login?host=https://code.dataos.io\&username=panxy3\&password=eadsch6ju -H "Authorization:Bearer i1TerZwHQSsveIrHs53wr6lKdzxbJL2mVNCu8fs5Ao0"
+func gitLabLoginHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	host, username, password := strings.TrimSpace(r.FormValue("host")), strings.TrimSpace(r.FormValue("username")), r.FormValue("password")
+	if len(host) == 0 {
+		retHttpCode(400, 1400, w, "param host must not nil.")
+		return
+	}
+	if len(username) == 0 {
+		retHttpCode(400, 1400, w, "param username must not nil.")
+		return
+	}
+
+	authorization := r.Header.Get("Authorization")
+	if len(authorization) == 0 {
+		retHttpCode(401, 401, w, "header Authorization must not nil.")
+		return
+	}
+
+	s, err := glApi.Session(host, username, password).PostSession()
+	if err != nil {
+		log.Printf("[POST]/v1/repos/gitlab/login. user %s err %v\n", username, err)
+		retHttpCode(401, 1401, w, "unauthorized")
+		return
+	}
+
+	option := &gitLabInfo{
+		Host:         host,
+		User:         username,
+		PrivateToken: s.PrivateToken,
+	}
+
+	b, err := json.Marshal(option)
+	if err != nil {
+		retHttpCode(400, 1400, w, err)
+		return
+	}
+
+	nr, err := http.NewRequest("POST", "/v1/repos/gitlab", bytes.NewReader(b))
+	if err != nil {
+		retHttpCode(400, 1400, w, err)
+		return
+	}
+	nr.Header.Set("Authorization", authorization)
+
+	gitlabHandler(w, nr, nil)
+	return
 }
 
 func getGitLabOptionByDFUser(name string) (*gitLabInfo, error) {

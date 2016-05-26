@@ -1,6 +1,9 @@
 package gitlab
 
-import "fmt"
+import (
+	"fmt"
+	"encoding/json"
+)
 
 const (
 	Gitlab_Credential_Key       = "PRIVATE-TOKEN"
@@ -8,6 +11,7 @@ const (
 	GitLab_Api_Url_Path_Project = "/api/v3/projects"
 	GitLab_Api_Url_Path_Keys    = "/api/v3/projects/%d/keys"
 	GitLab_Api_Url_Path_Branch  = "/api/v3/projects/%d/repository/branches"
+	GitLab_Api_Url_Path_Session = "/api/v3/session"
 )
 
 type Client interface {
@@ -16,8 +20,10 @@ type Client interface {
 	ProjectInterface
 	BranchInterface
 	DeployKeyInterface
+	SessionInterface
 }
 
+//--------------------- User ---------------------
 type UserInterface interface {
 	User(host, privateToken string) Users
 }
@@ -39,19 +45,21 @@ func (r *RestClient) GetUser() (*User, error) {
 	return user, nil
 }
 
-type Groups interface {
-	ListGroups() ([]Group, error)
-}
+//--------------------- Groups ---------------------
+//type Groups interface {
+//	ListGroups() ([]Group, error)
+//}
+//
+//func (r *RestClient) ListGroups() ([]Group, error) {
+//	groups := []Group{}
+//	if err := r.Client.GetJson(groups, r.Url, r.Credential.Key, r.Credential.Value); err != nil {
+//		return nil, err
+//	}
+//
+//	return groups, nil
+//}
 
-func (r *RestClient) ListGroups() ([]Group, error) {
-	groups := []Group{}
-	if err := r.Client.GetJson(groups, r.Url, r.Credential.Key, r.Credential.Value); err != nil {
-		return nil, err
-	}
-
-	return groups, nil
-}
-
+//--------------------- Projects ---------------------
 type ProjectInterface interface {
 	Project(host, privateToken string) Projects
 }
@@ -85,6 +93,7 @@ func (r *RestClient) ListProjects() ([]Project, error) {
 
 }
 
+//--------------------- Branches ---------------------
 type BranchInterface interface {
 	Branch(host, privateToken string) Branches
 }
@@ -108,6 +117,7 @@ func (r *RestClient) ListBranches(projectId int) ([]Branch, error) {
 	return *branches, nil
 }
 
+//--------------------- DeployKeys ---------------------
 type DeployKeyInterface interface {
 	DeployKey(host, privateToken string) DeployKeys
 }
@@ -159,4 +169,38 @@ func (h *HttpFactory) newClient(host, api, privateToken string) *RestClient {
 		},
 		Client: h,
 	}
+}
+
+func (h *HttpFactory) newSessionClient(host, api, login, password string) *RestClient {
+	return &RestClient{
+		Url:    fmt.Sprintf("%s?login=%s&password=%s", UrlMaker(host, api), login, password),
+		Client: h,
+	}
+}
+
+//--------------------- Session ---------------------
+type SessionInterface interface {
+	Session(host, login, password string) Sessions
+}
+
+type Sessions interface {
+	PostSession() (*Session, error)
+}
+
+func (c *HttpFactory) Session(host, login, password string) Sessions {
+	return c.newSessionClient(host, GitLab_Api_Url_Path_Session, login, password)
+}
+
+func (r *RestClient) PostSession() (*Session, error) {
+	b, err := r.Client.Post(r.Url, []byte{})
+	if err != nil {
+		return nil, err
+	}
+
+	s := new(Session)
+	if err := json.Unmarshal(b, s); err != nil {
+		return nil, err
+	}
+
+	return s, nil
 }
