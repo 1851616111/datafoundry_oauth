@@ -80,6 +80,50 @@ func httpGet(url string, credential ...string) ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
+func httpGetFunc(url string, f func(resp *http.Response), credential ...string) ([]byte, error) {
+
+	var resp *http.Response
+	var err error
+	if len(credential) == 2 {
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, fmt.Errorf("[http] err %s, %s", url, err)
+		}
+		req.Header.Set(credential[0], credential[1])
+
+		resp, err = http.DefaultClient.Do(req)
+		if err != nil {
+			fmt.Printf("http get err:%s", err.Error())
+			return nil, err
+		}
+
+		if f != nil {
+			f(resp)
+		}
+
+		switch resp.StatusCode {
+		case 404:
+			return nil, ErrNotFound
+		case 200:
+			return ioutil.ReadAll(resp.Body)
+		}
+		if resp.StatusCode < 200 || resp.StatusCode > 300 {
+			return nil, fmt.Errorf("[http get] status err %s, %d", url, resp.StatusCode)
+		}
+	} else {
+		resp, err = http.Get(url)
+		if err != nil {
+			fmt.Printf("http get err:%s", err.Error())
+			return nil, err
+		}
+		if resp.StatusCode != 200 {
+			return nil, fmt.Errorf("[http get] status err %s, %d", url, resp.StatusCode)
+		}
+	}
+
+	return ioutil.ReadAll(resp.Body)
+}
+
 func httpAction(method, url string, body []byte, credential ...string) ([]byte, error) {
 	var resp *http.Response
 	var err error

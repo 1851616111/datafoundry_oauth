@@ -1,8 +1,8 @@
 package gitlab
 
 import (
-	"fmt"
 	"encoding/json"
+	"fmt"
 )
 
 const (
