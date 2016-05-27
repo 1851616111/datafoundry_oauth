@@ -4,7 +4,7 @@ function env::export() {
     if [ "X$env" = "X" ];then
 
         if [ $1 = GITHUB_REDIRECT_URL ]; then
-            export GITHUB_REDIRECT_URL=http://datafoundry-oauth.app.dataos.io/v1/github-redirect
+            export GITHUB_REDIRECT_URL=http://datafoundry-oauth.app.dataos.io/v1/repos/github-redirect
         fi
         if [ $1 = GITHUB_CLIENT_ID ]; then
             export GITHUB_CLIENT_ID=2369ed831a59847924b4
