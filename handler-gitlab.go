@@ -315,7 +315,7 @@ retry:
 		return
 	}
 
-	retHttpCodef(200, 1200, w, fmt.Sprintf("{\"secret\":\"%s\"}", option.SecretName))
+	retHttpCodeJson(200, 1200, w, fmt.Sprintf("{\"secret\":\"%s\"}", option.SecretName))
 }
 
 //curl -XPOST  http://127.0.0.1:9443/v1/repos/gitlab/login?host=https://code.dataos.io\&username=panxy3\&password=eadsch6ju -H "Authorization:Bearer i1TerZwHQSsveIrHs53wr6lKdzxbJL2mVNCu8fs5Ao0"
