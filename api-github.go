@@ -110,14 +110,14 @@ func GetOrgReps(userInfo map[string]string, org string) (*Repos, error) {
 		goNum := lastPage - 1
 		var goFunc = func(goTime int) interface{} {
 			page := goTime + 1
+
 			url := fmt.Sprintf(Github_API_Org_Repos, org, page)
-			fmt.Println(url)
 			b, err := get(url, credKey, credValue)
 			if err != nil {
 				log.Printf("go get github orgs reps times=%d err %v", goTime, err)
 				return nil
 			}
-			fmt.Printf("%s\n", string(b))
+
 			repos := &Repos{}
 
 			if err := json.Unmarshal(b, &repos); err != nil {
