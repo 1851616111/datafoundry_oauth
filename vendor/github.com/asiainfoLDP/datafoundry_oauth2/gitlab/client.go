@@ -3,6 +3,8 @@ package gitlab
 import (
 	"encoding/json"
 	"fmt"
+	httpuitl "github.com/asiainfoLDP/datafoundry_oauth2/util/http"
+	"strings"
 )
 
 const (
@@ -12,6 +14,7 @@ const (
 	GitLab_Api_Url_Path_Keys    = "/api/v3/projects/%d/keys"
 	GitLab_Api_Url_Path_Branch  = "/api/v3/projects/%d/repository/branches"
 	GitLab_Api_Url_Path_Session = "/api/v3/session"
+	GitLab_Api_Url_Path_WebHook = "/api/v3/projects/%s/hooks"
 )
 
 type Client interface {
@@ -21,6 +24,7 @@ type Client interface {
 	BranchInterface
 	DeployKeyInterface
 	SessionInterface
+	WebHookInterface
 }
 
 //--------------------- User ---------------------
@@ -28,17 +32,17 @@ type UserInterface interface {
 	User(host, privateToken string) Users
 }
 
-func (c *HttpFactory) User(host, privateToken string) Users {
-	return c.newClient(host, GitLab_Api_Url_Path_User, privateToken)
+func (f *HttpFactory) User(host, privateToken string) Users {
+	return f.newClient(host, GitLab_Api_Url_Path_User, privateToken)
 }
 
 type Users interface {
 	GetUser() (*User, error)
 }
 
-func (r *RestClient) GetUser() (*User, error) {
+func (c *RestClient) GetUser() (*User, error) {
 	user := new(User)
-	if err := r.Client.GetJson(user, r.Url, r.Credential.Key, r.Credential.Value); err != nil {
+	if err := c.Client.GetJson(user, c.Url, c.Credential.Key, c.Credential.Value); err != nil {
 		return nil, err
 	}
 
@@ -64,22 +68,22 @@ type ProjectInterface interface {
 	Project(host, privateToken string) Projects
 }
 
-func (c *HttpFactory) Project(host, privateToken string) Projects {
-	return c.newClient(host, GitLab_Api_Url_Path_Project, privateToken)
+func (f *HttpFactory) Project(host, privateToken string) Projects {
+	return f.newClient(host, GitLab_Api_Url_Path_Project, privateToken)
 }
 
 type Projects interface {
 	ListProjects() ([]Project, error)
 }
 
-func (r *RestClient) ListProjects() ([]Project, error) {
+func (c *RestClient) ListProjects() ([]Project, error) {
 	projects := []Project{}
 
 	page := 1
 	for {
 		ps := new([]Project)
-		url := fmt.Sprintf("%s?page=%d", r.Url, page)
-		if err := r.Client.GetJson(ps, url, r.Credential.Key, r.Credential.Value); err != nil {
+		url := fmt.Sprintf("%s?page=%d", c.Url, page)
+		if err := c.Client.GetJson(ps, url, c.Credential.Key, c.Credential.Value); err != nil {
 			return projects, err
 		}
 		if len(*ps) > 0 {
@@ -98,19 +102,19 @@ type BranchInterface interface {
 	Branch(host, privateToken string) Branches
 }
 
-func (c *HttpFactory) Branch(host, privateToken string) Branches {
-	return c.newClient(host, GitLab_Api_Url_Path_Branch, privateToken)
+func (f *HttpFactory) Branch(host, privateToken string) Branches {
+	return f.newClient(host, GitLab_Api_Url_Path_Branch, privateToken)
 }
 
 type Branches interface {
 	ListBranches(projectId int) ([]Branch, error)
 }
 
-func (r *RestClient) ListBranches(projectId int) ([]Branch, error) {
-	r.Url = fmt.Sprintf(r.Url, projectId)
+func (c *RestClient) ListBranches(projectId int) ([]Branch, error) {
+	c.Url = fmt.Sprintf(c.Url, projectId)
 
 	branches := new([]Branch)
-	if err := r.Client.GetJson(branches, r.Url, r.Credential.Key, r.Credential.Value); err != nil {
+	if err := c.Client.GetJson(branches, c.Url, c.Credential.Key, c.Credential.Value); err != nil {
 		return nil, err
 	}
 
@@ -122,8 +126,8 @@ type DeployKeyInterface interface {
 	DeployKey(host, privateToken string) DeployKeys
 }
 
-func (c *HttpFactory) DeployKey(host, privateToken string) DeployKeys {
-	return c.newClient(host, GitLab_Api_Url_Path_Keys, privateToken)
+func (f *HttpFactory) DeployKey(host, privateToken string) DeployKeys {
+	return f.newClient(host, GitLab_Api_Url_Path_Keys, privateToken)
 }
 
 type DeployKeys interface {
@@ -132,49 +136,38 @@ type DeployKeys interface {
 	DeleteKey(id int) error
 }
 
-func (r *RestClient) ListKeys(projectId int) ([]DeployKey, error) {
+func (c *RestClient) ListKeys(projectId int) ([]DeployKey, error) {
 	keys := new([]DeployKey)
-	url := fmt.Sprintf(r.Url, projectId)
-	if err := r.Client.GetJson(keys, url, r.Credential.Key, r.Credential.Value); err != nil {
+	url := fmt.Sprintf(c.Url, projectId)
+	if err := c.Client.GetJson(keys, url, c.Credential.Key, c.Credential.Value); err != nil {
 		return nil, err
 	}
 
 	return *keys, nil
 }
 
-func (r *RestClient) CreateKey(option *NewDeployKeyOption) error {
-	url := fmt.Sprintf(r.Url, option.ProjectId)
-	b, err := r.Client.Encode(option.Param)
+func (c *RestClient) CreateKey(option *NewDeployKeyOption) error {
+	url := fmt.Sprintf(c.Url, option.ProjectId)
+	b, err := c.Client.Encode(option.Param)
 	if err != nil {
 		return err
 	}
 
-	_, err = r.Client.Post(url, b, r.Credential.Key, r.Credential.Value)
+	_, err = c.Client.Post(url, "application/json", b, c.Credential.Key, c.Credential.Value)
 	return err
 }
 
-func (r *RestClient) DeleteKey(id int) error {
-	url := fmt.Sprintf(r.Url, id)
-	_, err := r.Client.Delete(url, r.Credential.Key, r.Credential.Value)
+func (c *RestClient) DeleteKey(id int) error {
+	url := fmt.Sprintf(c.Url, id)
+	_, err := c.Client.Delete(url, c.Credential.Key, c.Credential.Value)
 
 	return err
 }
 
-func (h *HttpFactory) newClient(host, api, privateToken string) *RestClient {
-	return &RestClient{
-		Url: UrlMaker(host, api),
-		Credential: Credential{
-			Key:   Gitlab_Credential_Key,
-			Value: privateToken,
-		},
-		Client: h,
-	}
-}
-
-func (h *HttpFactory) newSessionClient(host, api, login, password string) *RestClient {
+func (f *HttpFactory) newSessionClient(host, api, login, password string) *RestClient {
 	return &RestClient{
 		Url:    fmt.Sprintf("%s?login=%s&password=%s", UrlMaker(host, api), login, password),
-		Client: h,
+		Client: f,
 	}
 }
 
@@ -187,12 +180,12 @@ type Sessions interface {
 	PostSession() (*Session, error)
 }
 
-func (c *HttpFactory) Session(host, login, password string) Sessions {
-	return c.newSessionClient(host, GitLab_Api_Url_Path_Session, login, password)
+func (f *HttpFactory) Session(host, login, password string) Sessions {
+	return f.newSessionClient(host, GitLab_Api_Url_Path_Session, login, password)
 }
 
-func (r *RestClient) PostSession() (*Session, error) {
-	b, err := r.Client.Post(r.Url, []byte{})
+func (c *RestClient) PostSession() (*Session, error) {
+	b, err := c.Client.Post(c.Url, "application/json", []byte{})
 	if err != nil {
 		return nil, err
 	}
@@ -203,4 +196,55 @@ func (r *RestClient) PostSession() (*Session, error) {
 	}
 
 	return s, nil
+}
+
+//--------------------- WebHook ---------------------
+type WebHookInterface interface {
+	WebHook(host, privateToken string) WebHooks
+}
+
+type WebHooks interface {
+	CreateWebHook(projectId string, p httpuitl.Param) error
+	//GetWebHook(projectId, id string) (*WebHooks, error)
+	//DeleteWebHook(projectId, id string) error
+}
+
+func (f *HttpFactory) WebHook(host, api, privateToken string) WebHooks {
+	return f.newClient(host, GitLab_Api_Url_Path_WebHook, privateToken)
+}
+
+//func (c *RestClient) GetWebHook(projectId, id string) (*WebHooks, error) {
+//
+//}
+//
+//func (c *RestClient) DeleteWebHook(projectId, id string) error {
+//
+//}
+
+func (c *RestClient) CreateWebHook(projectId string, params httpuitl.Param) error {
+
+	return create(c, projectId, params)
+}
+
+func create(c *RestClient, projectId string, p httpuitl.Param) error {
+	url := fmt.Sprintf(c.Url, projectId)
+
+	var body interface{}
+	var err error
+
+	var bodyType string
+	switch bodyType = p.GetBodyType(); bodyType {
+	case "application/x-www-form-urlencoded":
+		body = strings.NewReader(fmt.Sprint(p.GetParam()))
+	case "application/json":
+		fallthrough
+	default:
+		body, err = json.Marshal(p.GetParam())
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = c.Client.Post(url, bodyType, body, c.Credential.Key, c.Credential.Value)
+	return err
 }

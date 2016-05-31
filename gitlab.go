@@ -63,7 +63,12 @@ func hasDeployKey(DataFoundryHost, user, gitLabHost string) (bool, *gitlabutil.K
 	return true, pair
 }
 
-func setDeployKey(DataFoundryHost, user, gitLabHost string, new *gitlabutil.KeyPair) error {
-	deployKey := fmt.Sprintf("/df_service/%s/df_user/%s/oauth/gitlab_service/%s/deploykey", DataFoundryHost, user, etcdFormatUrl(gitLabHost))
-	return db.set(deployKey, new)
+func setDeployKey(source, key string, value interface{}) error {
+	deployKey := fmt.Sprintf("/oauth/deploykeys/%s/%s", source, key)
+	return db.set(deployKey, value)
+}
+
+func getDeployKey(source, key string) (string, error) {
+	deployKey := fmt.Sprintf("/oauth/deploykeys/%s/%s", source, key)
+	return db.get(deployKey, true, false)
 }

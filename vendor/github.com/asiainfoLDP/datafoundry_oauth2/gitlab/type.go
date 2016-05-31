@@ -1,5 +1,9 @@
 package gitlab
 
+import (
+	httputil "github.com/asiainfoLDP/datafoundry_oauth2/util/http"
+)
+
 type User struct {
 	Name          string `json:"name"`
 	Username      string `json:"username"`
@@ -93,4 +97,18 @@ type Session struct {
 	Name         string `json:"name"`
 	UserName     string `json:"username"`
 	PrivateToken string `json:"private_token"`
+}
+
+type WebHookParam struct {
+	Url                     string
+	Push_events             string
+	Issues_events           string
+	Merge_requests_events   string
+	Tag_push_events         string
+	Note_events             string
+	Enable_ssl_verification string
+}
+
+func (p *WebHookParam) String() string {
+	return httputil.InterfaceToString(p)
 }

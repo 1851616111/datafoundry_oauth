@@ -2,6 +2,9 @@ package main
 
 import (
 	"bytes"
+	"crypto/md5"
+	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"github.com/asiainfoLDP/datafoundry_oauth2/util/rand"
 	"io/ioutil"
@@ -155,8 +158,8 @@ func generateGithubName(username string) string {
 	return fmt.Sprintf("%s-github-%s", username, rand.String(8))
 }
 
-func generateGitlabName(username, gitlabHost string) string {
-	return fmt.Sprintf("%s-gitlab-%s", username, convertDFValidateName(gitlabHost))
+func generateReposDeployName(sourceKind, sourceHost string) string {
+	return fmt.Sprintf("source-%s-%s-%s", sourceKind, convertDFValidateName(sourceHost), rand.String(8))
 }
 
 func retHttpCodef(code, bodyCode int, w http.ResponseWriter, format string, a ...interface{}) {
@@ -199,4 +202,28 @@ func etcdFormatUrl(url string) string {
 
 func convertDFValidateName(name string) string {
 	return strings.Replace(name, ".", "-", -1)
+}
+
+func contains(l []string, s string) bool {
+	for _, str := range l {
+		if str == s {
+			return true
+		}
+	}
+	return false
+}
+
+func getMd5(content []byte) string {
+	md5Ctx := md5.New()
+	md5Ctx.Write(content)
+	cipherStr := md5Ctx.Sum(nil)
+	return hex.EncodeToString(cipherStr)
+}
+
+func base64Encode(src []byte) string {
+	return base64.StdEncoding.EncodeToString(src)
+}
+
+func base64Decode(s string) ([]byte, error) {
+	return base64.StdEncoding.DecodeString(s)
 }

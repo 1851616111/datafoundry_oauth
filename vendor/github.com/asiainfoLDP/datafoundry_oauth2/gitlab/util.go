@@ -1,5 +1,16 @@
 package gitlab
 
+func (f *HttpFactory) newClient(host, api, privateToken string) *RestClient {
+	return &RestClient{
+		Url: UrlMaker(host, api),
+		Credential: Credential{
+			Key:   Gitlab_Credential_Key,
+			Value: privateToken,
+		},
+		Client: f,
+	}
+}
+
 func filterOwnerProject(pro Project) bool {
 	return pro.Owner != nil
 }
@@ -65,13 +76,17 @@ func ConverOrgProjects(pl []Project) []NewOrgProjectList {
 
 }
 
-func FilterDeployKeysByTitle(dks []DeployKey, filter string, filterFn func(title, filter string) bool) []DeployKey {
+func FilterDeployKeysByTitle(dks []DeployKey, filterFn func(string, string) bool, filterStr string) []DeployKey {
 	ndks := []DeployKey{}
 	for _, v := range dks {
-		if filterFn(v.Title, filter) {
+		if filterFn(v.Title, filterStr) {
 			ndks = append(ndks, v)
 		}
 	}
 
 	return ndks
+}
+
+func Equals(a, b string) bool {
+	return a == b
 }

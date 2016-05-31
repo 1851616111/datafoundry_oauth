@@ -49,6 +49,7 @@ func notReachErrRetry(f func(c *Etcd) error) (err error) {
 
 func (c *Etcd) set(key string, value interface{}) error {
 	t := reflect.TypeOf(value).Kind()
+
 	switch t {
 	case reflect.String:
 		return notReachErrRetry(func(c *Etcd) error {

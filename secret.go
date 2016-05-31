@@ -272,8 +272,8 @@ func upsertSecret(option SecretOption) error {
 				return err
 			}
 			return nil
+			fmt.Println("secret not found ")
 		}
-
 		return err
 	}
 

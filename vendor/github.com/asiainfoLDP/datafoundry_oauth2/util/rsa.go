@@ -1,6 +1,7 @@
 package util
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/asiainfoLDP/datafoundry_oauth2/util/rand"
 	"io/ioutil"
@@ -71,6 +72,15 @@ type Pool struct {
 type KeyPair struct {
 	Public  []byte
 	Private []byte
+}
+
+func (k *KeyPair) String() string {
+	var buf bytes.Buffer
+
+	buf.Write(k.Public)
+	buf.Write(k.Private)
+
+	return buf.String()
 }
 
 func generateKeyPair(key string, keyType string) (*KeyPair, error) {
