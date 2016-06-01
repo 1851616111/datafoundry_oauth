@@ -187,11 +187,6 @@ func gitLabBranchHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 }
 
-type Pair struct {
-	DFSecret   string
-	PrivateKey string
-}
-
 //curl http://etcdsystem.servicebroker.dataos.io:2379/v2/keys/oauth/deploykeys/gitlab  -u asiainfoLDP:6ED9BA74-75FD-4D1B-8916-842CB936AC1A
 //curl http://127.0.0.1:9443/v1/repos/gitlab/authorize/deploy -H "Authorization:Bearer DWqXQ0N0YhFqBfjIyT0oHpxcTtIwR9nmCpvMaqUKx70" -H "namespace:oauth" -d '{"host":"https://code.dataos.io","project_id":43}'
 func gitLabSecretHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -241,55 +236,8 @@ func gitLabSecretHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		return
 	}
 
-	var option *SecretSSHOptions
 	const DeployKeyTitle = "DataFoundry@ci.dataos.io"
-	if len(ks) > 0 {
-		ks = gitlabapi.FilterDeployKeysByTitle(ks, gitlabapi.Equals, DeployKeyTitle)
-	}
-
-	switch len(ks) {
-	case 1:
-
-		privateKey := ks[0].Key
-		p := []byte(privateKey)
-		p = append(p, 0xa)
-		keyId := getMd5(p)
-
-		s, err := getDeployKey("gitlab", keyId)
-		if err != nil {
-			if EtcdKeyNotFound(err) {
-				// todo delete key 及重新生成
-				retHttpCodef(400, 1400, w, "get deploy key err %v\n", err.Error())
-				return
-			}
-			retHttpCodef(400, 1400, w, "get deploy key err %v\n", err.Error())
-			return
-		}
-
-		pair := new(Pair)
-		json.Unmarshal([]byte(s), pair)
-
-		pb, _ := base64Decode(pair.PrivateKey)
-
-		option = &SecretSSHOptions{
-			NameSpace:        namespace,
-			UserName:         dfUser.Name,
-			SecretName:       pair.DFSecret,
-			DataFoundryToken: stripBearToken(authorization),
-			PrivateKey:       string(pb),
-		}
-
-		if err := option.Validate(); err != nil {
-			retHttpCodef(400, 1400, w, "validate datafoundry ssh secret option err %s", err.Error())
-			return
-		}
-
-		if err := upsertSecret(option); err != nil {
-			retHttpCodef(400, 1400, w, "create datafoundry ssh secret err %s", err.Error())
-			return
-		}
-
-	case 0:
+	create := func(w http.ResponseWriter) {
 		deployKey := KeyPool.Pop()
 		fmt.Printf("generage deploy keys:\n%s", deployKey)
 
@@ -319,7 +267,7 @@ func gitLabSecretHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 			return
 		}
 
-		option = &SecretSSHOptions{
+		option := &SecretSSHOptions{
 			NameSpace:        namespace,
 			UserName:         dfUser.Name,
 			SecretName:       secretName,
@@ -327,22 +275,71 @@ func gitLabSecretHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 			PrivateKey:       string(deployKey.Private),
 		}
 
-		if err := option.Validate(); err != nil {
-			retHttpCodef(400, 1400, w, "validate datafoundry ssh secret option err %s", err.Error())
+		if err := upsertSecret(option); err != nil {
+			retHttpCodef(400, 1400, w, "create datafoundry ssh secret err %s", err.Error())
 			return
+		}
+
+		retHttpCodeJson(200, 1200, w, fmt.Sprintf("{\"secret\":\"%s\"}", option.SecretName))
+	}
+
+	if len(ks) > 0 {
+		ks = gitlabapi.FilterDeployKeysByTitle(ks, gitlabapi.Equals, DeployKeyTitle)
+	}
+
+	if len(ks) == 1 {
+
+		id := getTextId(ks[0].Key)
+
+		key, err := getDeployKey("gitlab", id)
+		if err != nil {
+			if EtcdKeyNotFound(err) {
+				if err := glApi.DeployKey(gitLab.Host, gitLab.PrivateToken).DeleteKey(bind.Id, ks[0].Id); err != nil {
+					retHttpCodef(400, 1400, w, "delete deploy key err %v", err.Error())
+				} else {
+					//if err := deleteSecret(option); err != nil {
+					//	log.Printf("delete old secret err %v", err)
+					//}
+					//若etcd内容查找不到, 清空deploykey, 清理环境走新建流程
+					create(w)
+				}
+				return
+			}
+			retHttpCodef(400, 1400, w, "get deploy key err %v\n", err.Error())
+			return
+		}
+
+		pair, err := parsePair(key)
+		if err != nil {
+			retHttpCodef(400, 1400, w, "parse deploy key err %v\n", err.Error())
+			return
+		}
+
+		pk, err := base64Decode(pair.PrivateKey)
+		if err != nil {
+			retHttpCodef(400, 1400, w, "parse deploy key err %v\n", err.Error())
+			return
+		}
+
+		option := &SecretSSHOptions{
+			NameSpace:        namespace,
+			UserName:         dfUser.Name,
+			SecretName:       pair.DFSecret,
+			DataFoundryToken: stripBearToken(authorization),
+			PrivateKey:       string(pk),
 		}
 
 		if err := upsertSecret(option); err != nil {
 			retHttpCodef(400, 1400, w, "create datafoundry ssh secret err %s", err.Error())
 			return
 		}
-
-	default:
-		log.Printf("gitlab %s deploy keys %d > 1", gitLab.Host)
-		// need remove
+		retHttpCodeJson(200, 1200, w, fmt.Sprintf("{\"secret\":\"%s\"}", option.SecretName))
 	}
 
-	retHttpCodeJson(200, 1200, w, fmt.Sprintf("{\"secret\":\"%s\"}", option.SecretName))
+	if len(ks) == 0 {
+		create(w)
+		return
+	}
 }
 
 //curl -XPOST  http://127.0.0.1:9443/v1/repos/gitlab/login?host=https://code.dataos.io\&username=panxy3\&password=eadsch6ju -H "Authorization:Bearer i1TerZwHQSsveIrHs53wr6lKdzxbJL2mVNCu8fs5Ao0"
@@ -406,4 +403,25 @@ func getGitLabOptionByDFUser(name string) (*gitLabInfo, error) {
 	}
 
 	return option, nil
+}
+
+func getTextId(privateKey string) string {
+	p := []byte(privateKey)
+	//增加回车
+	p = append(p, 0xa)
+	return getMd5(p)
+}
+
+type Pair struct {
+	DFSecret   string
+	PrivateKey string
+}
+
+func parsePair(pairStr string) (*Pair, error) {
+	pair := new(Pair)
+	if err := json.Unmarshal([]byte(pairStr), pair); err != nil {
+		return nil, err
+	}
+
+	return pair, nil
 }

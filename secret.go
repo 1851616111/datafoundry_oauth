@@ -19,9 +19,10 @@ const (
 )
 
 var (
-	post Post = httpPost
-	get  Get  = httpGet
-	put  Put  = httpPUT
+	post   Post   = httpPost
+	get    Get    = httpGet
+	put    Put    = httpPUT
+	delete Delete = httpDelete
 
 	GithubSecretLabel = &Label{
 		key:      GithubSecretLabelKey,
@@ -35,6 +36,7 @@ type secret interface {
 	get(namespace, name string, token string) (*api.Secret, error)
 	list(namespace, option GetOption, token string) (*api.SecretList, error)
 	update(s *api.Secret, token string) error
+	delete(namespace, option GetOption, token string) error
 }
 
 type Get func(url string, credential ...string) ([]byte, error)
@@ -42,6 +44,8 @@ type Get func(url string, credential ...string) ([]byte, error)
 type Post func(url string, body []byte, credential ...string) ([]byte, error)
 
 type Put func(url string, body []byte, credential ...string) ([]byte, error)
+
+type Delete func(url string, credential ...string) ([]byte, error)
 
 func (p Put) update(s *api.Secret, token string) error {
 	body, err := json.Marshal(s)
@@ -136,6 +140,17 @@ func (g Get) list(namespace string, option GetOption, token string) (*api.Secret
 		return nil, err
 	}
 	return secrets, nil
+}
+
+func (d Delete) delete(namespace string, option GetOption, token string) error {
+	var url string
+	var err error
+	if url, err = getUrl(namespace, option); err != nil {
+		return err
+	}
+
+	_, err = d(url, "Authorization", fmt.Sprintf("Bearer %s", token))
+	return err
 }
 
 func (o *SecretTokenOptions) NewSecret() *api.Secret {
@@ -264,7 +279,19 @@ func getSecret(o SecretOption) (*api.Secret, error) {
 	return get.get(o.GetDFNamespace(), o.GetSecretName(), o.GetDFToken())
 }
 
+func deleteSecret(o SecretOption) error {
+	if err := o.Validate(); err != nil {
+		return err
+	}
+
+	return delete.delete(o.GetDFNamespace(), GetOption{Name: o.GetSecretName()}, o.GetDFToken())
+}
+
 func upsertSecret(option SecretOption) error {
+	if err := option.Validate(); err != nil {
+		return err
+	}
+
 	secret, err := getSecret(option)
 	if err != nil {
 		if NotFound(err) {

@@ -135,7 +135,9 @@ func httpAction(method, url string, body []byte, credential ...string) ([]byte, 
 		return nil, fmt.Errorf("[http] err %s, %s", url, err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set(credential[0], credential[1])
+	if len(credential) == 2 {
+		req.Header.Set(credential[0], credential[1])
+	}
 	resp, err = http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("[http] err %s, %s", url, err)
@@ -152,6 +154,10 @@ func httpAction(method, url string, body []byte, credential ...string) ([]byte, 
 	}
 
 	return b, nil
+}
+
+func httpDelete(url string, credential ...string) ([]byte, error) {
+	return httpAction("DELETE", url, nil, credential...)
 }
 
 func generateGithubName(username string) string {

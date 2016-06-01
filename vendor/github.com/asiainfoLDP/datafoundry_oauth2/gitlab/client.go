@@ -133,7 +133,7 @@ func (f *HttpFactory) DeployKey(host, privateToken string) DeployKeys {
 type DeployKeys interface {
 	ListKeys(projectId int) ([]DeployKey, error)
 	CreateKey(option *NewDeployKeyOption) error
-	DeleteKey(id int) error
+	DeleteKey(projectId, id int) error
 }
 
 func (c *RestClient) ListKeys(projectId int) ([]DeployKey, error) {
@@ -157,8 +157,8 @@ func (c *RestClient) CreateKey(option *NewDeployKeyOption) error {
 	return err
 }
 
-func (c *RestClient) DeleteKey(id int) error {
-	url := fmt.Sprintf(c.Url, id)
+func (c *RestClient) DeleteKey(projectId, id int) error {
+	url := fmt.Sprintf(c.Url, projectId) + fmt.Sprintf("/%d", id)
 	_, err := c.Client.Delete(url, c.Credential.Key, c.Credential.Value)
 
 	return err
