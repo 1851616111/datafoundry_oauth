@@ -22,6 +22,7 @@ var (
 	post   Post   = httpPost
 	get    Get    = httpGet
 	put    Put    = httpPUT
+	patch  Patch  = httpPATCH
 	delete Delete = httpDelete
 
 	GithubSecretLabel = &Label{
@@ -44,6 +45,8 @@ type Get func(url string, credential ...string) ([]byte, error)
 type Post func(url string, body []byte, credential ...string) ([]byte, error)
 
 type Put func(url string, body []byte, credential ...string) ([]byte, error)
+
+type Patch func(url string, body []byte, credential ...string) ([]byte, error)
 
 type Delete func(url string, credential ...string) ([]byte, error)
 

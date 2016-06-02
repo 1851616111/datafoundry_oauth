@@ -11,17 +11,18 @@ import (
 )
 
 const (
-	Github_API_User          = "https://api.github.com/user"
-	Github_API_User_Repos    = "https://api.github.com/users/%s/repos"
-	Github_API_Owner_Orgs    = "https://api.github.com/user/orgs"
-	Github_API_Org_Repos     = "https://api.github.com/orgs/%s/repos?page=%d"
-	Github_API_Repo_Branches = "https://api.github.com/repos/%s/%s/branches"
+	GitHub_API_User          = "https://api.github.com/user"
+	GitHub_API_User_Repos    = "https://api.github.com/users/%s/repos"
+	GitHub_API_Owner_Orgs    = "https://api.github.com/user/orgs"
+	GitHub_API_Org_Repos     = "https://api.github.com/orgs/%s/repos?page=%d"
+	GitHub_API_Repo_Branches = "https://api.github.com/repos/%s/%s/branches"
+	GitHub_API_Repo_WebHook  = "https://api.github.com/repos/%s/%s/hooks"
 )
 
 func GetUserInfo(userInfo map[string]string) (*Owner, error) {
 	credKey, credValue := getCredentials(userInfo)
 
-	b, err := get(Github_API_User, credKey, credValue)
+	b, err := get(GitHub_API_User, credKey, credValue)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +44,7 @@ func GetOwnerRepos(userInfo map[string]string) (*Repos, error) {
 
 	credKey, credValue := getCredentials(userInfo)
 
-	url := fmt.Sprintf(Github_API_User_Repos, user.Login)
+	url := fmt.Sprintf(GitHub_API_User_Repos, user.Login)
 	b, err := get(url, credKey, credValue)
 	if err != nil {
 		return nil, err
@@ -60,7 +61,7 @@ func GetOwnerRepos(userInfo map[string]string) (*Repos, error) {
 func GetOwnerOrgs(userInfo map[string]string) ([]Org, error) {
 	credKey, credValue := getCredentials(userInfo)
 
-	b, err := get(Github_API_Owner_Orgs, credKey, credValue)
+	b, err := get(GitHub_API_Owner_Orgs, credKey, credValue)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +84,7 @@ func GetOrgReps(userInfo map[string]string, org string) (*Repos, error) {
 	repos := &Repos{}
 	resp_header_value_c := make(chan []string, 1)
 
-	url := fmt.Sprintf(Github_API_Org_Repos, org, firstPage)
+	url := fmt.Sprintf(GitHub_API_Org_Repos, org, firstPage)
 
 	b, err := httpGetFunc(url, func(resp *http.Response) {
 		const GitHubApiLastPageKey = "Link"
@@ -111,7 +112,7 @@ func GetOrgReps(userInfo map[string]string, org string) (*Repos, error) {
 		var goFunc = func(goTime int) interface{} {
 			page := goTime + 1
 
-			url := fmt.Sprintf(Github_API_Org_Repos, org, page)
+			url := fmt.Sprintf(GitHub_API_Org_Repos, org, page)
 			b, err := get(url, credKey, credValue)
 			if err != nil {
 				log.Printf("go get github orgs reps times=%d err %v", goTime, err)
@@ -177,7 +178,7 @@ func middleStr(s, start, end string) string {
 func GetRepoBranck(userInfo map[string]string, user, repo string) ([]map[string]interface{}, error) {
 	credKey, credValue := getCredentials(userInfo)
 
-	url := fmt.Sprintf(Github_API_Repo_Branches, user, repo)
+	url := fmt.Sprintf(GitHub_API_Repo_Branches, user, repo)
 
 	b, err := get(url, credKey, credValue)
 	if err != nil {
@@ -190,4 +191,53 @@ func GetRepoBranck(userInfo map[string]string, user, repo string) ([]map[string]
 	}
 
 	return tmp, nil
+}
+
+func CreateRepoWebHook(user, repo string, option *GitHubWebHookOption, credentialKey, credentialValue string) (*GitHubWebHook, error) {
+	url := fmt.Sprintf(GitHub_API_Repo_WebHook, user, repo)
+
+	byte, err := json.Marshal(option)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(credentialKey, credentialValue)
+	b, err := post(url, byte, credentialKey, credentialValue)
+	if err != nil {
+		return nil, err
+	}
+
+	hook := new(GitHubWebHook)
+	if err := json.Unmarshal(b, hook); err != nil {
+		return nil, err
+	}
+
+	return hook, nil
+}
+
+func UpdateRepoWebHook(user, repo string, id int, option *GitHubWebHookOption, credentialKey, credentialValue string) (*GitHubWebHook, error) {
+	url := fmt.Sprintf(GitHub_API_Repo_WebHook, user, repo) + fmt.Sprintf("/%d", id)
+
+	byte, err := json.Marshal(option)
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := patch(url, byte, credentialKey, credentialValue)
+	if err != nil {
+		return nil, err
+	}
+
+	hook := new(GitHubWebHook)
+	if err := json.Unmarshal(b, hook); err != nil {
+		return nil, err
+	}
+
+	return hook, nil
+}
+
+func DeleteRepoWebHook(user, repo string, id int, credentialKey, credentialValue string) error {
+	url := fmt.Sprintf(GitHub_API_Repo_WebHook, user, repo) + fmt.Sprintf("/%d", id)
+	_, err := delete(url, credentialKey, credentialValue)
+	return err
 }

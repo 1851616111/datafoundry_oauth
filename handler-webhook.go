@@ -16,7 +16,8 @@ import (
 var WebHookKind = []string{"github", "gitlab"}
 
 //curl http://etcdsystem.servicebroker.dataos.io:2379/v2/keys/oauth/webhooks  -u asiainfoLDP:6ED9BA74-75FD-4D1B-8916-842CB936AC1A
-//curl 127.0.0.1:9443/v1/repos/source/gitlab/webhooks -d '{"host": "https://code.dataos.io", "namespace": "oauth", "build": "oauth", "repo":"43", "spec":{"url":"https://www.baidu.com"}}'  -H "Authorization:Bearer wKxJsBMWA9tcugBBTMZklU9TQShZXag0AdZNC_6HMIM"
+//curl 127.0.0.1:9443/v1/repos/source/gitlab/webhooks -d '{"host": "https://code.dataos.io", "namespace": "oauth", "build": "oauth", "repo":"43", "spec":{"url":"https://www.baidu.com"}}'  -H "Authorization:Bearer cIOXAervAeS0ErI6Ilm5vp1cYOMrAZ1ic7EA6e09GuE"
+//curl 127.0.0.1:9443/v1/repos/source/github/webhooks -d '{"host": "https://github.com", "namespace": "oauth", "build": "oauth", "user":"asiainfoLDP", "repo":"datafoundry_oauth2", "spec":{"events": ["push","pull_request","status"],"config": {"url": "http://example.com/webhook"}}}'  -H "Authorization:Bearer cIOXAervAeS0ErI6Ilm5vp1cYOMrAZ1ic7EA6e09GuE"
 func createWebHookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	token := r.Header.Get("Authorization")
@@ -34,6 +35,72 @@ func createWebHookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.
 	}
 
 	switch source {
+	case "github":
+		userInfo, err := getGithubInfo(user)
+		if err != nil {
+			retHttpCode(400, 1401, w, "unauthorized")
+			return
+		}
+
+		newHook := new(GitHubWebHookOption)
+		newHook.DefaultOption()
+
+		hook := installHookParser(newHook)
+		if err := json.NewDecoder(r.Body).Decode(hook); err != nil {
+			retHttpCodef(400, 1400, w, "read req body err %v", err.Error())
+			return
+		}
+		hook.Host = "www.github.com"
+
+		hookStr, err := getWebHook(source, hook.Host, hook.NameSpace, hook.Build)
+		if err == nil {
+			//若存在,对比hook是否变化
+			oldHook := new(GitHubWebHook)
+			json.Unmarshal([]byte(hookStr), oldHook)
+
+			if gitHubWebHookchanged(&oldHook.GitHubWebHookOption, newHook) {
+				credKey, credValue := getCredentials(userInfo)
+				retWH, err := UpdateRepoWebHook(hook.User, hook.Repo, oldHook.Id, newHook, credKey, credValue)
+				if err != nil {
+					retHttpCodef(400, 1400, w, "update webhook err %v", err.Error())
+					return
+				}
+
+				err = setWebHook(source, hook.Host, hook.NameSpace, hook.Build, retWH)
+				if err != nil {
+					retHttpCodef(400, 1400, w, "store webhook err %v", err.Error())
+					return
+				}
+			}
+
+			retHttpCode(200, 1200, w, "ok")
+			return
+
+		} else {
+			//total new
+			if EtcdKeyNotFound(err) {
+				credKey, credValue := getCredentials(userInfo)
+
+				retHook, err := CreateRepoWebHook(hook.User, hook.Repo, hook.Spec.(*GitHubWebHookOption), credKey, credValue)
+				if err != nil {
+					retHttpCodef(400, 1400, w, "create webhook err %v", err.Error())
+					return
+				}
+
+				err = setWebHook(source, hook.Host, hook.NameSpace, hook.Build, retHook)
+				if err != nil {
+					retHttpCodef(400, 1400, w, "store webhook err %v", err.Error())
+					return
+				}
+
+				retHttpCode(200, 1200, w, "ok")
+				return
+			}
+
+			retHttpCodef(400, 1400, w, "get webhook info err %v", err.Error())
+			return
+		}
+
 	case "gitlab":
 		option, err := getGitLabOptionByDFUser(user.Name)
 		if err != nil {
@@ -47,7 +114,7 @@ func createWebHookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.
 		newHook := new(gitlabapi.WebHookParam)
 		newHook.Push_events = true
 		newHook.Enable_ssl_verification = true
-		hook := newWebHook(newHook)
+		hook := installHookParser(newHook)
 
 		if err := json.NewDecoder(r.Body).Decode(hook); err != nil {
 			retHttpCodef(400, 1400, w, "read req body err %v", err.Error())
@@ -121,6 +188,7 @@ func createWebHookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.
 }
 
 //curl -XDELETE 127.0.0.1:9443/v1/repos/source/gitlab/webhooks?host=https://code.dataos.io\&namespace=oauth\&build=oauth\&repo=43 -H "Authorization:Bearer uH7VUpN5c9CcL4KWFCuAAGqk4INvRb4vgpsZo0FOUFA"
+//curl -XDELETE 127.0.0.1:9443/v1/repos/source/github/webhooks?namespace=oauth\&build=oauth\&user=asiainfoLDP\&repo=datafoundry_oauth2 -H "Authorization:Bearer uH7VUpN5c9CcL4KWFCuAAGqk4INvRb4vgpsZo0FOUFA"
 func deleteWebHookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	source := ps.ByName("source")
@@ -129,7 +197,7 @@ func deleteWebHookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.
 		return
 	}
 
-	host, namespace, build, repo := r.FormValue("host"), r.FormValue("namespace"), r.FormValue("build"), r.FormValue("repo")
+	host, namespace, build, repo, gituser := r.FormValue("host"), r.FormValue("namespace"), r.FormValue("build"), r.FormValue("repo"), r.FormValue("user")
 
 	token := r.Header.Get("Authorization")
 
@@ -140,12 +208,48 @@ func deleteWebHookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.
 	}
 
 	switch source {
+	case "github":
+		host = "www.github.com"
+		userInfo, err := getGithubInfo(user)
+		if err != nil {
+			retHttpCode(400, 1401, w, "unauthorized")
+			return
+		}
+
+		hookStr, err := getWebHook(source, host, namespace, build)
+		if err != nil {
+			if EtcdKeyNotFound(err) {
+				retHttpCode(200, 200, w, "ok")
+				return
+			}
+			retHttpCodef(404, 1404, w, "delete webhook unknown err %v", err)
+			return
+		}
+
+		hook := new(GitHubWebHook)
+		if err = json.Unmarshal([]byte(hookStr), hook); err != nil {
+			retHttpCodef(400, 1400, w, "delete webhook err %v", err.Error())
+			return
+		}
+
+		credKey, credValue := getCredentials(userInfo)
+		if err := DeleteRepoWebHook(gituser, repo, hook.Id, credKey, credValue); err != nil {
+			retHttpCodef(400, 1400, w, "delete webhook err %v", err.Error())
+			return
+		}
+
+		if err := deleteWebHook(source, host, namespace, build); err != nil {
+			retHttpCodef(400, 1400, w, "delete webhook storage err %v", err.Error())
+			return
+		}
+
+
 	case "gitlab":
 
 		option, err := getGitLabOptionByDFUser(user.Name)
 		if err != nil {
 			if EtcdKeyNotFound(err) {
-				retHttpCode(400, 1401, w, "unauthorized")
+				retHttpCode(200, 200, w, "ok")
 				return
 			}
 		}
@@ -177,18 +281,19 @@ func deleteWebHookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.
 			retHttpCodef(400, 1400, w, "delete webhook storage err %v", err.Error())
 			return
 		}
-
-		retHttpCode(200, 200, w, "ok")
-		return
 	}
+
+	retHttpCode(200, 200, w, "ok")
+	return
 }
 
 type WebHook struct {
 	Host      string
 	NameSpace string
 	Build     string
+	User      string //github only
 	Repo      string
-	Spec      interface{}
+	Spec      interface{} `json:"spec"`
 }
 
 func (h *WebHook) validate() error {
@@ -226,7 +331,7 @@ func (h *WebHook) validate() error {
 	return nil
 }
 
-func newWebHook(webHook interface{}) *WebHook {
+func installHookParser(webHook interface{}) *WebHook {
 	return &WebHook{
 		Spec: webHook,
 	}
