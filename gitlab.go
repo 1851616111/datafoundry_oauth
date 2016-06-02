@@ -4,10 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	gitlabapi "github.com/asiainfoLDP/datafoundry_oauth2/gitlab"
-	gitlabutil "github.com/asiainfoLDP/datafoundry_oauth2/util"
 	oapi "github.com/openshift/origin/pkg/user/api/v1"
 	"io/ioutil"
-	"log"
 	"net/http"
 )
 
@@ -46,23 +44,6 @@ func parseRequestBody(r *http.Request, i interface{}) error {
 	return nil
 }
 
-func hasDeployKey(DataFoundryHost, user, gitLabHost string) (bool, *gitlabutil.KeyPair) {
-	deployKey := fmt.Sprintf("/df_service/%s/df_user/%s/oauth/gitlab_service/%s/deploykey", DataFoundryHost, user, etcdFormatUrl(gitLabHost))
-
-	pair := new(gitlabutil.KeyPair)
-	if err := getJson(deployKey, pair); err != nil {
-		if EtcdKeyNotFound(err) {
-			//不存在
-			return false, nil
-		}
-		//异常情况,不知道是否存在
-		log.Printf("get deploy key unknown err %v", err)
-		return true, nil
-	}
-	//存在并取回结果
-	return true, pair
-}
-
 func setDeployKey(source, key string, value interface{}) error {
 	deployKey := fmt.Sprintf("/oauth/deploykeys/%s/%s", source, key)
 	return db.set(deployKey, value)
@@ -71,4 +52,19 @@ func setDeployKey(source, key string, value interface{}) error {
 func getDeployKey(source, key string) (string, error) {
 	deployKey := fmt.Sprintf("/oauth/deploykeys/%s/%s", source, key)
 	return db.get(deployKey, true, false)
+}
+
+func setWebHook(source, host, namespace, build string, value interface{}) error {
+	webHook := fmt.Sprintf("/oauth/webhooks/%s/host/%s/namespaces/%s/builds/%s", source, host, namespace, build)
+	return db.set(webHook, value)
+}
+
+func getWebHook(source, host, namespace, build string) (string, error) {
+	webHook := fmt.Sprintf("/oauth/webhooks/%s/host/%s/namespaces/%s/builds/%s", source, host, namespace, build)
+	return db.get(webHook, true, false)
+}
+
+func deleteWebHook(source, host, namespace, build string) error {
+	webHook := fmt.Sprintf("/oauth/webhooks/%s/host/%s/namespaces/%s/builds/%s", source, host, namespace, build)
+	return db.delete(webHook, true)
 }

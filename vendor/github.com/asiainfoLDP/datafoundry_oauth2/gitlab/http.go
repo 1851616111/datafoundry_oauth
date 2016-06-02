@@ -22,10 +22,9 @@ type HttpFactory struct {
 	GetJson func(json interface{}, url string, credential ...string) error
 	Post    func(url string, bodyType string, body interface{}, credential ...string) ([]byte, error)
 	Put     func(url string, bodyType string, body interface{}, credential ...string) ([]byte, error)
-	//PostIO  func(url string, bodyType string, body io.Reader, credential ...string) ([]byte, error)
-	Delete func(url string, credential ...string) ([]byte, error)
-	Decode func(data []byte, v interface{}) error
-	Encode func(v interface{}) ([]byte, error)
+	Delete  func(url string, credential ...string) ([]byte, error)
+	Decode  func(data []byte, v interface{}) error
+	Encode  func(v interface{}) ([]byte, error)
 }
 
 func ClientFactory() *HttpFactory {
@@ -151,33 +150,8 @@ func httpAction(method, url string, bodyType string, body interface{}, credentia
 		return nil, fmt.Errorf("[http] status err %s, %d\n", url, resp.StatusCode)
 	}
 
-	return b, nil
-}
-
-func httpActionIO(method, url string, bodyType string, body io.Reader, credential ...string) ([]byte, error) {
-	var resp *http.Response
-	var err error
-	req, err := http.NewRequest(method, url, body)
-	if err != nil {
-		return nil, fmt.Errorf("[http] err %s, %s\n", url, err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	if len(credential) == 2 {
-		req.Header.Set(credential[0], credential[1])
-	}
-	resp, err = http.DefaultClient.Do(req)
-
-	if err != nil {
-		return nil, fmt.Errorf("[http] err %s, %s\n", url, err)
-	}
-	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("[http] read err %s, %s\n", url, err)
-	}
-
-	if resp.StatusCode < 200 || resp.StatusCode > 300 {
-		return nil, fmt.Errorf("[http] status err %s, %d\n", url, resp.StatusCode)
+	if resp.StatusCode >= 400 {
+		return b, fmt.Errorf("[http] status err %s, %d\n", url, resp.StatusCode)
 	}
 
 	return b, nil
@@ -222,4 +196,22 @@ func httpDelete(url string, credential ...string) ([]byte, error) {
 
 func IsUnauthorized(err error) bool {
 	return err == ErrUnauthorized
+}
+
+const (
+	ContentType_Form = "application/x-www-form-urlencoded"
+	ContentType_Json = "application/json"
+)
+
+type NewOption struct {
+	Param            interface{}
+	ParamContentType string
+}
+
+func (p *NewOption) GetBodyType() string {
+	return p.ParamContentType
+}
+
+func (p *NewOption) GetParam() interface{} {
+	return p.Param
 }

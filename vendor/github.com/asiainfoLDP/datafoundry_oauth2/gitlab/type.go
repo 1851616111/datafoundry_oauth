@@ -100,13 +100,14 @@ type Session struct {
 }
 
 type WebHookParam struct {
-	Url                     string
-	Push_events             string
-	Issues_events           string
-	Merge_requests_events   string
-	Tag_push_events         string
-	Note_events             string
-	Enable_ssl_verification string
+	Id                      int    `param:"-"`
+	Url                     string `param:"url"`
+	Push_events             bool   `param:"push_events"`
+	Issues_events           bool   `param:"issues_events"`
+	Merge_requests_events   bool   `param:"merge_requests_events"`
+	Tag_push_events         bool   `param:"tag_push_events"`
+	Note_events             bool   `param:"note_events"`
+	Enable_ssl_verification bool   `param:"enable_ssl_verification"`
 }
 
 func (p *WebHookParam) String() string {

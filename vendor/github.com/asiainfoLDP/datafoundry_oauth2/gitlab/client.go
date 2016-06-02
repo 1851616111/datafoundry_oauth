@@ -8,13 +8,13 @@ import (
 )
 
 const (
-	Gitlab_Credential_Key       = "PRIVATE-TOKEN"
-	GitLab_Api_Url_Path_User    = "/api/v3/user"
-	GitLab_Api_Url_Path_Project = "/api/v3/projects"
-	GitLab_Api_Url_Path_Keys    = "/api/v3/projects/%d/keys"
-	GitLab_Api_Url_Path_Branch  = "/api/v3/projects/%d/repository/branches"
-	GitLab_Api_Url_Path_Session = "/api/v3/session"
-	GitLab_Api_Url_Path_WebHook = "/api/v3/projects/%s/hooks"
+	Gitlab_Credential_Key        = "PRIVATE-TOKEN"
+	GitLab_Api_Url_Path_User     = "/api/v3/user"
+	GitLab_Api_Url_Path_Project  = "/api/v3/projects"
+	GitLab_Api_Url_Path_Keys     = "/api/v3/projects/%d/keys"
+	GitLab_Api_Url_Path_Branch   = "/api/v3/projects/%d/repository/branches"
+	GitLab_Api_Url_Path_Session  = "/api/v3/session"
+	GitLab_Api_Url_Path_WebHooks = "/api/v3/projects/%s/hooks"
 )
 
 type Client interface {
@@ -204,30 +204,29 @@ type WebHookInterface interface {
 }
 
 type WebHooks interface {
-	CreateWebHook(projectId string, p httpuitl.Param) error
-	//GetWebHook(projectId, id string) (*WebHooks, error)
-	//DeleteWebHook(projectId, id string) error
+	CreateWebHook(projectId string, p httpuitl.Param) (*WebHookParam, error)
+	UpdateWebHook(projectId string, id int, p httpuitl.Param) (*WebHookParam, error)
+	DeleteWebHook(projectId string, id int) error
 }
 
-func (f *HttpFactory) WebHook(host, api, privateToken string) WebHooks {
-	return f.newClient(host, GitLab_Api_Url_Path_WebHook, privateToken)
+func (f *HttpFactory) WebHook(host, privateToken string) WebHooks {
+	return f.newClient(host, GitLab_Api_Url_Path_WebHooks, privateToken)
 }
 
-//func (c *RestClient) GetWebHook(projectId, id string) (*WebHooks, error) {
-//
-//}
-//
-//func (c *RestClient) DeleteWebHook(projectId, id string) error {
-//
-//}
-
-func (c *RestClient) CreateWebHook(projectId string, params httpuitl.Param) error {
-
+func (c *RestClient) CreateWebHook(projectId string, params httpuitl.Param) (*WebHookParam, error) {
 	return create(c, projectId, params)
 }
 
-func create(c *RestClient, projectId string, p httpuitl.Param) error {
-	url := fmt.Sprintf(c.Url, projectId)
+func (c *RestClient) UpdateWebHook(projectId string, id int, params httpuitl.Param) (*WebHookParam, error) {
+	return update(c, projectId, id, params)
+}
+
+func (c *RestClient) DeleteWebHook(projectId string, id int) error {
+	return delete(c, projectId, id)
+}
+
+func create(c *RestClient, projectId string, p httpuitl.Param) (*WebHookParam, error) {
+	url := fmt.Sprintf(c.Url, projectId) + fmt.Sprintf("/")
 
 	var body interface{}
 	var err error
@@ -241,10 +240,57 @@ func create(c *RestClient, projectId string, p httpuitl.Param) error {
 	default:
 		body, err = json.Marshal(p.GetParam())
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	_, err = c.Client.Post(url, bodyType, body, c.Credential.Key, c.Credential.Value)
+	b, err := c.Client.Post(url, bodyType, body, c.Credential.Key, c.Credential.Value)
+	if err != nil {
+		fmt.Println("create gitlab webhook err %v, %s", err, string(b))
+	}
+
+	ret := new(WebHookParam)
+	if err := json.Unmarshal(b, ret); err != nil {
+		return nil, err
+	}
+
+	return ret, nil
+}
+
+func update(c *RestClient, projectId string, id int, p httpuitl.Param) (*WebHookParam, error) {
+	url := fmt.Sprintf(c.Url, projectId) + fmt.Sprintf("/%d", id)
+
+	var body interface{}
+	var err error
+
+	var bodyType string
+	switch bodyType = p.GetBodyType(); bodyType {
+	case "application/x-www-form-urlencoded":
+		body = strings.NewReader(fmt.Sprint(p.GetParam()))
+	case "application/json":
+		fallthrough
+	default:
+		body, err = json.Marshal(p.GetParam())
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	b, err := c.Client.Put(url, bodyType, body, c.Credential.Key, c.Credential.Value)
+	if err != nil {
+		fmt.Println("create gitlab webhook err %v, %s", err, string(b))
+	}
+
+	ret := new(WebHookParam)
+	if err := json.Unmarshal(b, ret); err != nil {
+		return nil, err
+	}
+
+	return ret, nil
+}
+
+func delete(c *RestClient, projectId string, id int) error {
+	url := fmt.Sprintf(c.Url, projectId) + fmt.Sprintf("/%d", id)
+	_, err := c.Client.Delete(url, c.Credential.Key, c.Credential.Value)
 	return err
 }

@@ -2,30 +2,13 @@ package http
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
-)
-
-const (
-	ContentType_Form = "application/x-www-form-urlencoded"
-	ContentType_Json = "application/json"
 )
 
 type Param interface {
 	GetBodyType() string
 	GetParam() interface{}
-}
-
-type NewOption struct {
-	Param            interface{}
-	ParamContentType string
-}
-
-func (p *NewOption) GetBodyType() string {
-	return p.ParamContentType
-}
-
-func (p *NewOption) GetParam() interface{} {
-	return p.Param
 }
 
 func InterfaceToString(param interface{}) string {
@@ -38,21 +21,19 @@ func InterfaceToString(param interface{}) string {
 	}
 
 	fields := t.NumField()
-	strType := reflect.TypeOf("")
-
 	var buf bytes.Buffer
 
 	for i := 0; i < fields; i++ {
-		if t.Field(i).Type != strType {
+		tag := t.Field(i).Tag.Get("param")
+		if tag == "-" {
 			continue
 		}
 
-		if v.Field(i).Len() > 0 {
+		if len(v.Field(i).String()) > 0 {
 			if buf.Len() > 0 {
-				buf.WriteString("&")
+				buf.WriteString(`&`)
 			}
 
-			tag := t.Field(i).Tag.Get("param")
 			if len(tag) > 0 {
 				buf.WriteString(tag)
 			} else {
@@ -60,7 +41,17 @@ func InterfaceToString(param interface{}) string {
 			}
 
 			buf.WriteString("=")
-			buf.WriteString(v.Field(i).String())
+			switch t.Field(i).Type.Kind() {
+			case reflect.Bool:
+				buf.WriteString(fmt.Sprintf("%t", v.Field(i).Bool()))
+			case reflect.String:
+				buf.WriteString(v.Field(i).String())
+			case reflect.Float32, reflect.Float64:
+				buf.WriteString(fmt.Sprintf("%f", v.Field(i).Float()))
+			case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+				reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				buf.WriteString(fmt.Sprintf("%d", v.Field(i).Int()))
+			}
 		}
 	}
 
