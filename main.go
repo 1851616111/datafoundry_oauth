@@ -12,7 +12,7 @@ import (
 
 var (
 	tokenConfig                                           Config
-	backingService_Redis                                  = RedisEnv.Get("Redis_BackingService_Name", nil)
+	backingService_Redis                                  string
 	GithubRedirectUrl, GithubClientID, GithubClientSecret string
 	dbConf                                                storeConfig
 	db                                                    Store
@@ -25,6 +25,9 @@ var (
 )
 
 func init() {
+	initEnvs()
+	backingService_Redis = RedisEnv.Get("Redis_BackingService_Name", nil)
+
 
 	if RedisConfig, ok := <-service.NewBackingService(service.Redis, service.ValidateHP, checkRedis, service.ErrorBackingService).GetBackingServices(backingService_Redis); !ok {
 		log.Fatal("init mongo err")
@@ -32,7 +35,7 @@ func init() {
 		Redis_Password = RedisConfig.Credential.Password
 	}
 
-	initEnvs()
+
 	initOauthConfig()
 
 	initCache()
