@@ -261,8 +261,6 @@ func getRedisMasterAddr(sentinelAddr string) (string, string) {
 		return "", ""
 	}
 
-	log.Printf("get redis addr: \"%v\"", redisMasterPair)
-
 	if len(redisMasterPair) != 2 {
 		return "", ""
 	}
