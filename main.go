@@ -4,6 +4,7 @@ import (
 	"fmt"
 	rsautil "github.com/asiainfoLDP/datafoundry_oauth2/util"
 	"github.com/asiainfoLDP/datafoundry_oauth2/util/cache/redis"
+	"github.com/asiainfoLDP/datafoundry_oauth2/util/service"
 	router "github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
@@ -11,25 +12,30 @@ import (
 
 var (
 	tokenConfig                                           Config
+	backingService_Redis                                  = RedisEnv.Get("Redis_BackingService_Name", nil)
 	GithubRedirectUrl, GithubClientID, GithubClientSecret string
 	dbConf                                                storeConfig
 	db                                                    Store
 	DFHost_API                                            string
 	DFHost_Key                                            string
 	DF_API_Auth                                           string
+	Redis_Addr, Redis_Port, Redis_Password                string
+	Cache                                                 redis.Cache
 	KeyPool                                               *rsautil.Pool
 )
 
 func init() {
 
-	redis.GetRedisMasterAddr("sb-oi4zztthwpmwy-redis.service-brokers.svc.cluster.local:26379")
-	//if RedisBS, ok := <-service.NewBackingService(service.Redis, service.ValidateHP, checkRedis, errBackingService).GetBackingServices(Service_Mongo); !ok {
-	//	Log.Fatal("init mongo err")
-	//}
+	if RedisConfig, ok := <-service.NewBackingService(service.Redis, service.ValidateHP, checkRedis, service.ErrorBackingService).GetBackingServices(backingService_Redis); !ok {
+		log.Fatal("init mongo err")
+	} else {
+		Redis_Password = RedisConfig.Credential.Password
+	}
 
 	initEnvs()
 	initOauthConfig()
 
+	initCache()
 	initStorage()
 	initOauth2Plugin()
 	initDFHost()
@@ -83,6 +89,11 @@ func initStorage() {
 	fmt.Println("oauth init storage config success")
 }
 
+func initCache() {
+	url := fmt.Sprintf("%s:%s", Redis_Addr, Redis_Port)
+	Cache = redis.CreateCache(url, Redis_Password)
+}
+
 func initOauth2Plugin() {
 	initGithubPlugin()
 }
@@ -118,6 +129,11 @@ func initEnvs() {
 	DatafoundryEnv.Init()
 	DatafoundryEnv.Print()
 	DatafoundryEnv.Validate(envNotNil)
+
+	RedisEnv.Init()
+	RedisEnv.Print()
+	RedisEnv.Validate(envNotNil)
+
 }
 
 func initSSHKey() {
@@ -130,3 +146,24 @@ func initSSHKey() {
 //curl -v https://github.com/login/oauth/access_token -d "client_id=2369ed831a59847924b4&client_secret=510bb29970fcd684d0e7136a5947f92710332c98&code=4fda33093c9fc12711f1&state=ccc"
 //access_token=f45feb6ff99f7b1be93d7dbcb8a4323431bc3321&scope=repo%2Cuser%3Aemail&token_type=bearer
 //curl https://api.github.com/user -H "Authorization: token 620a4404e076f6cf1a10f9e00519924e43497091”
+
+func checkRedis(svc service.Service) bool {
+	const retryTimes = 3
+
+	for i := 1; i <= retryTimes; i++ {
+		url := fmt.Sprintf("%s:%s", svc.Credential.Host, svc.Credential.Port)
+		//"sb-oi4zztthwpmwy-redis.service-brokers.svc.cluster.local:26379"
+		addr, port := getRedisMasterAddr(url)
+
+		if len(addr) > 0 && len(port) > 0 {
+			Redis_Addr, Redis_Port = addr, port
+			log.Printf("dial redis[%s:%s] success", addr, port)
+			return true
+		} else {
+			log.Printf("dial redis[%s] err %v", url)
+			continue
+		}
+	}
+
+	return false
+}

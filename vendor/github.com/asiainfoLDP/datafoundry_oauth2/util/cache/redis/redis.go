@@ -75,29 +75,3 @@ func CreateCache(server, auth string) Cache {
 	REDIS_POOL = createPool(server, auth)
 	return &cache{pool: REDIS_POOL}
 }
-
-func GetRedisMasterAddr(sentinelAddr string) (string, string) {
-	if len(sentinelAddr) == 0 {
-		log.Printf("Redis sentinelAddr is nil.")
-		return "", ""
-	}
-
-	conn, err := redis.DialTimeout("tcp", sentinelAddr, time.Second*10, time.Second*10, time.Second*10)
-	if err != nil {
-		log.Printf("redis dial timeout(\"tcp\", \"%s\", %d) error(%v)", sentinelAddr, time.Second, err)
-		return "", ""
-	}
-	defer conn.Close()
-
-	redisMasterPair, err := redis.Strings(conn.Do("SENTINEL", "get-master-addr-by-name", "mymaster"))
-	if err != nil {
-		log.Printf("conn.Do(\"SENTINEL\", \"get-master-addr-by-name\", \"%s\") error(%v)", "mymaster", err)
-		return "", ""
-	}
-
-	log.Printf("get redis addr: \"%v\"", redisMasterPair)
-	if len(redisMasterPair) != 2 {
-		return "", ""
-	}
-	return redisMasterPair[0], redisMasterPair[1]
-}

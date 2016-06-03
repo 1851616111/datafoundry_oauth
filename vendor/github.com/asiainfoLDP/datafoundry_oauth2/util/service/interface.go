@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"sync"
 )
@@ -129,4 +130,15 @@ func getCredentials(name string) ServiceList {
 	}
 
 	return (*m)[name]
+}
+
+func ErrorBackingService(err error) {
+	if err != nil {
+		log.Printf("config backingservice err %v", err)
+	}
+}
+func FatalBackingService(err error) {
+	if err != nil {
+		log.Fatalf("config backingservice err %v", err)
+	}
 }
