@@ -25,6 +25,7 @@ func (c *storeConfig) newClient() Store {
 type Store interface {
 	set(key string, value interface{}) error
 	get(key string, sort, recursive bool) (string, error)
+	delete(key string, recursive bool) error
 }
 
 type Etcd struct {
@@ -86,6 +87,22 @@ func (c *Etcd) get(key string, sort, recursive bool) (string, error) {
 	}
 
 	return rsp.Node.Value, nil
+}
+
+func (c *Etcd) delete(key string, recursive bool) error {
+	var rsp *etcd.Response
+	var err error
+
+	err = notReachErrRetry(func(c *Etcd) error {
+		rsp, err = c.Delete(key, recursive)
+		return err
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func getJson(key string, box interface{}) error {

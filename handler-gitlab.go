@@ -334,6 +334,7 @@ func gitLabSecretHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 			return
 		}
 		retHttpCodeJson(200, 1200, w, fmt.Sprintf("{\"secret\":\"%s\"}", option.SecretName))
+		return
 	}
 
 	if len(ks) == 0 {

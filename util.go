@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/asiainfoLDP/datafoundry_oauth2/util/rand"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -42,6 +43,10 @@ func httpPost(url string, body []byte, credential ...string) ([]byte, error) {
 
 func httpPUT(url string, body []byte, credential ...string) ([]byte, error) {
 	return httpAction("PUT", url, body, credential...)
+}
+
+func httpPATCH(url string, body []byte, credential ...string) ([]byte, error) {
+	return httpAction("PATCH", url, body, credential...)
 }
 
 func httpGet(url string, credential ...string) ([]byte, error) {
@@ -150,6 +155,7 @@ func httpAction(method, url string, body []byte, credential ...string) ([]byte, 
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 300 {
+		log.Printf("request err %s", string(b))
 		return nil, fmt.Errorf("[http] status err %s, %d", url, resp.StatusCode)
 	}
 
