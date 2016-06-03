@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	rsautil "github.com/asiainfoLDP/datafoundry_oauth2/util"
+	"github.com/asiainfoLDP/datafoundry_oauth2/util/cache/redis"
 	router "github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
@@ -20,6 +21,12 @@ var (
 )
 
 func init() {
+
+	redis.GetRedisMasterAddr("sb-oi4zztthwpmwy-redis.service-brokers.svc.cluster.local:26379")
+	//if RedisBS, ok := <-service.NewBackingService(service.Redis, service.ValidateHP, checkRedis, errBackingService).GetBackingServices(Service_Mongo); !ok {
+	//	Log.Fatal("init mongo err")
+	//}
+
 	initEnvs()
 	initOauthConfig()
 

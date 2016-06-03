@@ -243,7 +243,6 @@ func deleteWebHookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.
 			return
 		}
 
-
 	case "gitlab":
 
 		option, err := getGitLabOptionByDFUser(user.Name)
