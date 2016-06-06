@@ -13,6 +13,7 @@ const (
 	GitLab_Api_Url_Path_Project  = "/api/v3/projects"
 	GitLab_Api_Url_Path_Keys     = "/api/v3/projects/%d/keys"
 	GitLab_Api_Url_Path_Branch   = "/api/v3/projects/%d/repository/branches"
+	GitLab_Api_Url_Path_CallBack = "/users/auth/ldapmain/callback"
 	GitLab_Api_Url_Path_Session  = "/api/v3/session"
 	GitLab_Api_Url_Path_WebHooks = "/api/v3/projects/%s/hooks"
 )
@@ -23,6 +24,7 @@ type Client interface {
 	ProjectInterface
 	BranchInterface
 	DeployKeyInterface
+	CallBackInterface
 	SessionInterface
 	WebHookInterface
 }
@@ -162,6 +164,41 @@ func (c *RestClient) DeleteKey(projectId, id int) error {
 	_, err := c.Client.Delete(url, c.Credential.Key, c.Credential.Value)
 
 	return err
+}
+
+func (f *HttpFactory) newCallBackClient(host, api, username, password string) *RestClient {
+	return &RestClient{
+		Url:    fmt.Sprintf("%s?username=%s&password=%s", UrlMaker(host, api), username, password),
+		Client: f,
+	}
+}
+
+//callback is used for ldap to init login info
+//--------------------- CallBack ---------------------
+type CallBackInterface interface {
+	CallBack(host, username, password string) CallBacks
+}
+
+type CallBacks interface {
+	PostCallBack() (*CallBack, error)
+}
+
+func (f *HttpFactory) CallBack(host, user, password string) CallBacks {
+	return f.newCallBackClient(host, GitLab_Api_Url_Path_CallBack, user, password)
+}
+
+func (c *RestClient) PostCallBack() (*CallBack, error) {
+	b, err := c.Client.Post(c.Url, "application/json", []byte{})
+	if err != nil {
+		return nil, err
+	}
+
+	s := new(CallBack)
+	if err := json.Unmarshal(b, s); err != nil {
+		return nil, err
+	}
+
+	return s, nil
 }
 
 func (f *HttpFactory) newSessionClient(host, api, login, password string) *RestClient {

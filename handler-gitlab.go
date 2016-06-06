@@ -77,6 +77,7 @@ res:
 	}
 
 	key := fmt.Sprintf("/df_service/%s/df_user/%s/oauth/gitlabs/info", DFHost_Key, oUser.Name)
+	log.Printf("add gitlab[%s] user %s \n", DFHost_Key, oUser.Name)
 	if err := db.set(key, option); err != nil {
 		retHttpCodef(400, 1400, w, "store gitlab err %v", err.Error())
 		return
@@ -360,6 +361,8 @@ func gitLabLoginHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 		retHttpCode(401, 401, w, "header Authorization must not nil.")
 		return
 	}
+
+	glApi.CallBack(host, username, password).PostCallBack()
 
 	s, err := glApi.Session(host, username, password).PostSession()
 	if err != nil {

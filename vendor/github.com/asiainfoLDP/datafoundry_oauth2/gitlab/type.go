@@ -93,6 +93,11 @@ type Credential struct {
 	Value string
 }
 
+type CallBack struct {
+	UserName string
+	Password string
+}
+
 type Session struct {
 	Name         string `json:"name"`
 	UserName     string `json:"username"`
