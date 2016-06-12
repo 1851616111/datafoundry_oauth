@@ -88,7 +88,7 @@ func Exchange(code string) (*oauth2.Token, error) {
 
 func getGithubInfo(user *api.User) (map[string]string, error) {
 	key := getUserKey(user.Name, "github.com")
-	info, err := db.get(key, false, false)
+	info, err := db.getValue(key)
 	if err != nil {
 		return nil, err
 	}

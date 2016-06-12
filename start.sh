@@ -29,6 +29,9 @@ function env::export() {
         if [ $1 = ETCD_PASSWORD ]; then
             export ETCD_PASSWORD=6ED9BA74-75FD-4D1B-8916-842CB936AC1A
         fi
+        if [ $1 = Redis_BackingService_Name ]; then
+            export Redis_BackingService_Name=Redis_Oauth
+        fi
     fi
 }
 
@@ -38,8 +41,11 @@ function Env::Exports() {
     done
 }
 
+export VCAP_SERVICES='{"Redis":[{"name":"Redis_Oauth","label":"","plan":"standalone","credentials":{"Host":"sb-oi4zztthwpmwy-redis.service-brokers.svc.cluster.local","Name":"","Password":"be864e1082715d1136bd187170663b8e","Port":"26379","Uri":"","Username":"","Vhost":""}}]}'
+
 Env::Exports GITHUB_REDIRECT_URL GITHUB_CLIENT_ID GITHUB_CLIENT_SECRET
 Env::Exports DATAFOUNDRY_HOST_ADDR
 Env::Exports ETCD_HTTP_ADDR ETCD_HTTP_PORT ETCD_USER ETCD_PASSWORD
+Env::Exports Redis_BackingService_Name
 
 ./datafoundry_oauth2

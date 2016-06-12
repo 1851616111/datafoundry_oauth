@@ -110,11 +110,21 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 		return
 	}
 
-	projects, err := glApi.Project(option.Host, option.PrivateToken).ListProjects()
+	projects := []gitlabapi.Project{}
+
+	b, err := Cache.HFetch("host_"+option.Host, "user_"+option.User)
 	if err != nil {
-		retHttpCodef(400, 1400, w, "get projects err %v", err.Error())
+		retHttpCodef(400, 1400, w, "get projects(cached) err %v", err.Error())
 		return
 	}
+
+	json.Unmarshal(b, &projects)
+
+	//projects, err := glApi.Project(option.Host, option.PrivateToken).ListProjects()
+	//if err != nil {
+	//	retHttpCodef(400, 1400, w, "get projects err %v", err.Error())
+	//	return
+	//}
 
 	var p interface{}
 	switch userType {
@@ -134,7 +144,7 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 		Info: p,
 	}
 
-	b, err := json.Marshal(rt)
+	b, err = json.Marshal(rt)
 	if err != nil {
 		retHttpCodef(400, 1400, w, "convert projects err %v", err)
 		return
@@ -393,7 +403,7 @@ func gitLabLoginHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 
 func getGitLabOptionByDFUser(name string) (*gitLabInfo, error) {
 	key := fmt.Sprintf("/df_service/%s/df_user/%s/oauth/gitlabs/info", DFHost_Key, name)
-	s, err := db.get(key, true, false)
+	s, err := db.getValue(key)
 	if err != nil {
 		return nil, err
 	}

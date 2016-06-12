@@ -11,7 +11,7 @@ import (
 
 func NewBackingService(name string, validate ValidateService, check CheckService, err func(err error)) BackingService {
 	return &service{
-		name:     name,
+		kind:     name,
 		validate: validate,
 		check:    check,
 		err:      err,
@@ -23,32 +23,35 @@ type BackingService interface {
 }
 
 type service struct {
-	name     string
+	kind     string
 	validate ValidateService
 	check    CheckService
 	err      func(err error)
 }
 
 func (s *service) GetBackingServices(name string) <-chan Service {
-	return initBackingServicesFunc(name, s.validate, s.check, s.err)
+	return initBackingServicesFunc(s.kind, name, s.validate, s.check, s.err)
 }
 
-func initBackingServicesFunc(name string, validate ValidateService, check CheckService, errFunc func(err error)) <-chan Service {
+func initBackingServicesFunc(serviceKind, name string, validate ValidateService, check CheckService, errFunc func(err error)) <-chan Service {
 
-	svcs := getCredentials(name)
+	svcs := getCredentials(serviceKind)
 
 	if len(svcs) == 0 {
 		if errFunc != nil {
-			errFunc(errors.New(fmt.Sprintf("backingservice %s config nil.", name)))
+			errFunc(errors.New(fmt.Sprintf("backingservice %s config nil.", serviceKind)))
 		}
 		return nil
 	}
 
-	c := make(chan Service, len(svcs))
+	c := make(chan Service, 1)
 
 	go func() {
 		for _, svc := range svcs {
-			c <- svc
+			if svc.Name == name {
+				c <- svc
+				return
+			}
 		}
 		close(c)
 	}()

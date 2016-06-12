@@ -25,6 +25,7 @@ var (
 )
 
 func init() {
+
 	initEnvs()
 	backingService_Redis = RedisEnv.Get("Redis_BackingService_Name", nil)
 
@@ -46,6 +47,9 @@ func init() {
 }
 
 func main() {
+
+	runController()
+
 	router := router.New()
 
 	router.GET("/v1/repos/github-redirect", githubHandler)
@@ -160,10 +164,8 @@ func checkRedis(svc service.Service) bool {
 			Redis_Addr, Redis_Port = addr, port
 			log.Printf("dial redis[%s:%s] success", addr, port)
 			return true
-		} else {
-			log.Printf("dial redis[%s] err %v", url)
-			continue
 		}
+		continue
 	}
 
 	return false
