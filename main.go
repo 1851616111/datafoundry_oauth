@@ -154,9 +154,9 @@ func initSSHKey() {
 
 func checkRedis(svc service.Service) bool {
 	const retryTimes = 3
-
+	url := fmt.Sprintf("%s:%s", svc.Credential.Host, svc.Credential.Port)
+	fmt.Printf("Redis Addr [%s]", url)
 	for i := 1; i <= retryTimes; i++ {
-		url := fmt.Sprintf("%s:%s", svc.Credential.Host, svc.Credential.Port)
 		//"sb-oi4zztthwpmwy-redis.service-brokers.svc.cluster.local:26379"
 		addr, port := getRedisMasterAddr(url)
 
