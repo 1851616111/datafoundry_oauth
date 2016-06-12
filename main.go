@@ -30,7 +30,7 @@ func init() {
 	backingService_Redis = RedisEnv.Get("Redis_BackingService_Name", nil)
 
 	if RedisConfig, ok := <-service.NewBackingService(service.Redis, service.ValidateHP, checkRedis, service.ErrorBackingService).GetBackingServices(backingService_Redis); !ok {
-		log.Fatal("init mongo err")
+		log.Fatal("init redis err")
 	} else {
 		Redis_Password = RedisConfig.Credential.Password
 	}
