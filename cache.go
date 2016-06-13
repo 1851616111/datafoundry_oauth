@@ -35,7 +35,7 @@ type pair struct {
 
 func runController() {
 
-	const loopPeriod = 10 * time.Second
+	const loopPeriod = 30 * time.Second
 
 	ret := make(chan interface{}, 1)
 	defer close(ret)
@@ -66,41 +66,44 @@ func runController() {
 		}
 	}()
 
-	for {
-		select {
-		case p := <-reduceChan:
-			m := new(map[string]string)
-			json.Unmarshal([]byte(p), m)
-			host, user, privateToken := (*m)["host"], (*m)["user"], (*m)["private_token"]
-			if host != "" && user != "" && privateToken != "" {
-				projects, _ := glApi.Project(host, privateToken).ListProjects()
-				if b, err := json.Marshal(projects); err != nil {
-					fmt.Printf("controller looper %ds for gitlab projects err %v\n", err)
-				} else {
-					if err := Cache.HCache("gitlab_"+host+"_repo", "user_"+user+"_repos", b); err != nil {
-						fmt.Printf("controller cache gitlab projects err %v\n", err)
+	go func () {
+		for {
+			select {
+			case p := <-reduceChan:
+			fmt.Printf("read gitlab inf %v\n", p)
+				m := new(map[string]string)
+				json.Unmarshal([]byte(p), m)
+				host, user, privateToken := (*m)["host"], (*m)["user"], (*m)["private_token"]
+				if host != "" && user != "" && privateToken != "" {
+					projects, _ := glApi.Project(host, privateToken).ListProjects()
+					if b, err := json.Marshal(projects); err != nil {
+						fmt.Printf("controller looper %ds for gitlab projects err %v\n", err)
+					} else {
+						if err := Cache.HCache("gitlab_"+host+"_repo", "user_"+user+"_repos", b); err != nil {
+							fmt.Printf("controller cache gitlab projects err %v\n", err)
+						}
+					}
+
+					if len(projects) > 0 {
+						gitlab.RangeProjectsFunc(projects, func(pid int) {
+							go func() {
+								branches, _ := glApi.Branch(host, privateToken).ListBranches(pid)
+								if b, err := json.Marshal(branches); err != nil {
+									fmt.Printf("looper %ds for gitlab project %d err %v\n", pid, err)
+								} else {
+									if err := Cache.HCache("gitlab_"+host+"_branch", fmt.Sprintf("project_%d", pid), b); err != nil {
+										fmt.Printf("looper %ds for gitlab project %d err %v\n", pid, err)
+									}
+								}
+							}()
+
+						})
 					}
 				}
-
-				if len(projects) > 0 {
-					gitlab.RangeProjectsFunc(projects, func(pid int) {
-						go func() {
-							branches, _ := glApi.Branch(host, privateToken).ListBranches(pid)
-							if b, err := json.Marshal(branches); err != nil {
-								fmt.Printf("looper %ds for gitlab project %d err %v\n", pid, err)
-							} else {
-								if err := Cache.HCache("gitlab_"+host+"_branch", fmt.Sprintf("project_%d", pid), b); err != nil {
-									fmt.Printf("looper %ds for gitlab project %d err %v\n", pid, err)
-								}
-							}
-						}()
-
-					})
-				}
+			default:
 			}
-		default:
 		}
-	}
+	}()
 
 }
 
