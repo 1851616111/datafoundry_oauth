@@ -29,11 +29,14 @@ func init() {
 	initEnvs()
 	backingService_Redis = RedisEnv.Get("Redis_BackingService_Name", nil)
 
-	if RedisConfig, ok := <-service.NewBackingService(service.Redis, service.ValidateHP, checkRedis, service.ErrorBackingService).GetBackingServices(backingService_Redis); !ok {
-		log.Fatal("init redis err")
-	} else {
-		Redis_Password = RedisConfig.Credential.Password
-	}
+	//if RedisConfig, ok := <-service.NewBackingService(service.Redis, service.ValidateHP, checkRedis, service.ErrorBackingService).GetBackingServices(backingService_Redis); !ok {
+	//	log.Fatal("init redis err")
+	//} else {
+
+	//Redis_Password = RedisConfig.Credential.Password
+	Redis_Addr = "117.121.97.20"
+	Redis_Port = "9999"
+	//}
 
 	initOauthConfig()
 
@@ -49,7 +52,6 @@ func init() {
 func main() {
 
 	runController()
-
 	router := router.New()
 
 	router.GET("/v1/repos/github-redirect", githubHandler)
@@ -67,7 +69,7 @@ func main() {
 
 	router.POST("/v1/repos/gitlab/login", gitLabLoginHandler)
 
-	log.Fatal(http.ListenAndServe(":80", router))
+	log.Fatal(http.ListenAndServe(":9443", router))
 
 }
 
@@ -153,20 +155,21 @@ func initSSHKey() {
 //curl https://api.github.com/user -H "Authorization: token 620a4404e076f6cf1a10f9e00519924e43497091”
 
 func checkRedis(svc service.Service) bool {
-	const retryTimes = 3
-	url := fmt.Sprintf("%s:%s", svc.Credential.Host, svc.Credential.Port)
-	fmt.Printf("Redis Addr [%s]", url)
-	for i := 1; i <= retryTimes; i++ {
-		//"sb-oi4zztthwpmwy-redis.service-brokers.svc.cluster.local:26379"
-		addr, port := getRedisMasterAddr(url)
-
-		if len(addr) > 0 && len(port) > 0 {
-			Redis_Addr, Redis_Port = addr, port
-			log.Printf("dial redis[%s:%s] success", addr, port)
-			return true
-		}
-		continue
-	}
-
-	return false
+	//const retryTimes = 3
+	//url := fmt.Sprintf("%s:%s", svc.Credential.Host, svc.Credential.Port)
+	//fmt.Printf("Redis Addr [%s]", url)
+	//for i := 1; i <= retryTimes; i++ {
+	//	//"sb-oi4zztthwpmwy-redis.service-brokers.svc.cluster.local:26379"
+	//	addr, port := getRedisMasterAddr(url)
+	//
+	//	if len(addr) > 0 && len(port) > 0 {
+	//		Redis_Addr, Redis_Port = addr, port
+	//		log.Printf("dial redis[%s:%s] success", addr, port)
+	//		return true
+	//	}
+	//	continue
+	//}
+	//
+	//return false
+	return true
 }

@@ -35,10 +35,10 @@ func (s *service) GetBackingServices(name string) <-chan Service {
 
 func initBackingServicesFunc(serviceKind, name string, validate ValidateService, check CheckService, errFunc func(err error)) <-chan Service {
 
-	fmt.Println("serviceKind \t",serviceKind)
-	fmt.Println("serviceKind \t",name)
+	fmt.Println("serviceKind \t", serviceKind)
+	fmt.Println("serviceKind \t", name)
 	svcs := getCredentials(serviceKind)
-	fmt.Printf("svc %v\n",svcs)
+	fmt.Printf("svc %v\n", svcs)
 	if len(svcs) == 0 {
 		if errFunc != nil {
 			errFunc(errors.New(fmt.Sprintf("backingservice %s config nil.", serviceKind)))

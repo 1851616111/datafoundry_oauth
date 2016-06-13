@@ -41,7 +41,7 @@ function Env::Exports() {
     done
 }
 
-#export VCAP_SERVICES='{"Redis":[{"name":"Redis_Oauth","label":"","plan":"standalone","credentials":{"Host":"sb-oi4zztthwpmwy-redis.service-brokers.svc.cluster.local","Name":"","Password":"be864e1082715d1136bd187170663b8e","Port":"26379","Uri":"","Username":"","Vhost":""}}]}'
+export VCAP_SERVICES='{"Redis":[{"name":"Redis_Oauth","label":"","plan":"standalone","credentials":{"Host":"sb-oi4zztthwpmwy-redis.service-brokers.svc.cluster.local","Name":"","Password":"be864e1082715d1136bd187170663b8e","Port":"26379","Uri":"","Username":"","Vhost":""}}]}'
 
 Env::Exports GITHUB_REDIRECT_URL GITHUB_CLIENT_ID GITHUB_CLIENT_SECRET
 Env::Exports DATAFOUNDRY_HOST_ADDR
