@@ -6,20 +6,15 @@ import (
 	"os"
 	"os/exec"
 )
-
-//Processes: 243 total, 2 running, 5 stuck, 236 sleeping, 1063 threads
-//2016/06/06 15:48:00
-//Load Avg: 2.41, 2.42, 2.40
-//CPU usage: 1.38% user, 13.88% sys, 84.72% idle
-//SharedLibs: 163M resident, 22M data, 23M linkedit.
-//MemRegions: 48168 total, 3444M resident, 121M private, 1529M shared.
-//PhysMem: 11G used (1984M wired), 5501M unused.
-//VM: 1234G vsize, 533M framework vsize, 0(0) swapins, 0(0) swapouts.
-//Networks: packets: 530655/506M in, 345744/33M out.
-//Disks: 229327/6225M read, 221809/15G written.
+//todo 使用cpu赫兹来进行使用率的统计
+//top - 15:01:09 up 37 days, 16:53,  2 users,  load average: 1.29, 0.52, 0.23
+//Tasks:   1 total,   0 running,   1 sleeping,   0 stopped,   0 zombie
+//%Cpu(s): 25.5 us, 22.3 sy,  0.0 ni, 50.2 id,  0.0 wa,  0.0 hi,  1.1 si,  0.9 st
+//KiB Mem :  3882760 total,  1121804 free,   223180 used,  2537776 buff/cache
+//KiB Swap:  2097148 total,  2050732 free,    46416 used.  3151484 avail Mem
 //
-//PID   COMMAND %CPU TIME     #TH #WQ #PORTS MEM   PURG CMPRS PGRP PPID STATE    BOOSTS %CPU_ME %CPU_OTHRS UID FAULTS COW MSGSENT MSGRECV SYSBSD SYSMACH CSW PAGEINS IDLEW POWER USER    #MREGS RPRVT VPRVT VSIZE KPRVT KSHRD
-//3770  pprof   0.0  00:00.00 5   0   17+    696K+ 0B   0B    3770 3630 sleeping *0[1+] 0.00000 0.00000    501 590+   53+ 22+     10+     197+   59+     76+ 0       0     0.0   michael N/A    N/A   N/A   N/A   N/A   N/A
+//PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
+//4973 root      20   0  134184   8940   3720 S  94.3  0.2   0:34.50 datafoundry_oau
 
 const (
 	Line_Processes Line = iota + 1

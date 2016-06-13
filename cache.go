@@ -21,13 +21,12 @@ const (
 
 var scale uint8
 
-func init() {
-	go func() {
-		fmt.Printf("init cpu idle. %ds need\n", IdlerTimerSec)
-		scale = uint8(initAvgIdle())
-		fmt.Printf("init cpu idle: %d\n", IdlerTimerSec)
-	}()
-}
+//func init() {
+//	go func() {
+//		scale = uint8(initAvgIdle())
+//		fmt.Printf("init cpu idle: %d\n", scale)
+//	}()
+//}
 
 type pair struct {
 	key   string
