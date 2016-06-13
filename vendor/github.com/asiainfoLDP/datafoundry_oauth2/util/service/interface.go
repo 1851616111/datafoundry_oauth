@@ -49,6 +49,7 @@ func initBackingServicesFunc(serviceKind, name string, validate ValidateService,
 	go func() {
 		for _, svc := range svcs {
 			if svc.Name == name {
+				fmt.Println(svc)
 				c <- svc
 				return
 			}
@@ -123,6 +124,7 @@ const EnvKey = "VCAP_SERVICES"
 
 func getCredentials(name string) ServiceList {
 	s := os.Getenv(EnvKey)
+	fmt.Println(s)
 	if len(s) == 0 {
 		return nil
 	}
