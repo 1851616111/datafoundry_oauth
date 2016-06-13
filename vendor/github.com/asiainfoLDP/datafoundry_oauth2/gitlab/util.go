@@ -90,3 +90,9 @@ func FilterDeployKeysByTitle(dks []DeployKey, filterFn func(string, string) bool
 func Equals(a, b string) bool {
 	return a == b
 }
+
+func RangeProjectsFunc(p []Project, fn func(id int)) {
+	for i := range p {
+		fn(p[i].Id)
+	}
+}

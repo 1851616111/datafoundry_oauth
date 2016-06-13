@@ -112,7 +112,7 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 
 	projects := []gitlabapi.Project{}
 
-	b, err := Cache.HFetch("host_"+option.Host, "user_"+option.User)
+	b, err := Cache.HFetch("gitlab_"+option.Host+"_repo", "user_"+option.User+"_repos")
 	if err != nil {
 		retHttpCodef(400, 1400, w, "get projects(cached) err %v", err.Error())
 		return
@@ -181,17 +181,26 @@ func gitLabBranchHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		return
 	}
 
-	branches, err := glApi.Branch(option.Host, option.PrivateToken).ListBranches(projectId)
+	b, err := Cache.HFetch("gitlab_"+option.Host+"_branch", fmt.Sprintf("project_%d", projectId))
 	if err != nil {
-		retHttpCodef(400, 1400, w, "get project branches err %v", err.Error())
+		retHttpCodef(400, 1400, w, "get projects(cached) err %v", err.Error())
 		return
 	}
 
-	b, err := json.Marshal(branches)
-	if err != nil {
-		retHttpCodef(400, 1400, w, "convert branches err %v", err)
-		return
-	}
+	//json.Unmarshal(b, &bs)
+	//
+	//
+	////branches, err := glApi.Branch(option.Host, option.PrivateToken).ListBranches(projectId)
+	////if err != nil {
+	////	retHttpCodef(400, 1400, w, "get project branches err %v", err.Error())
+	////	return
+	////}
+	//
+	//b, err := json.Marshal(branches)
+	//if err != nil {
+	//	retHttpCodef(400, 1400, w, "convert branches err %v", err)
+	//	return
+	//}
 
 	retHttpCodeJson(200, 1200, w, string(b))
 

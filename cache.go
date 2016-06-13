@@ -7,6 +7,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/asiainfoLDP/datafoundry_oauth2/gitlab"
 	chanutil "github.com/asiainfoLDP/datafoundry_oauth2/util/channel"
 	etcdutil "github.com/asiainfoLDP/datafoundry_oauth2/util/etcd"
 	"github.com/asiainfoLDP/datafoundry_oauth2/util/pprof"
@@ -77,9 +78,25 @@ func runController() {
 				if b, err := json.Marshal(projects); err != nil {
 					fmt.Printf("controller looper %ds for gitlab projects err %v\n", err)
 				} else {
-					if err := Cache.HCache("host_"+host, "user_"+user, b); err != nil {
+					if err := Cache.HCache("gitlab_"+host+"_repo", "user_"+user+"_repos", b); err != nil {
 						fmt.Printf("controller cache gitlab projects err %v\n", err)
 					}
+				}
+
+				if len(projects) > 0 {
+					gitlab.RangeProjectsFunc(projects, func(pid int) {
+						go func() {
+							branches, _ := glApi.Branch(host, privateToken).ListBranches(pid)
+							if b, err := json.Marshal(branches); err != nil {
+								fmt.Printf("looper %ds for gitlab project %d err %v\n", pid, err)
+							} else {
+								if err := Cache.HCache("gitlab_"+host+"_branch", fmt.Sprintf("project_%d", pid), b); err != nil {
+									fmt.Printf("looper %ds for gitlab project %d err %v\n", pid, err)
+								}
+							}
+						}()
+
+					})
 				}
 			}
 		default:
