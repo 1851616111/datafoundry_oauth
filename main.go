@@ -67,7 +67,7 @@ func main() {
 
 	router.POST("/v1/repos/gitlab/login", gitLabLoginHandler)
 
-	log.Fatal(http.ListenAndServe(":9443", router))
+	log.Fatal(http.ListenAndServe(":80", router))
 
 }
 

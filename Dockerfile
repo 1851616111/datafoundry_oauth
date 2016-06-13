@@ -3,7 +3,7 @@ FROM golang:1.5.1
 WORKDIR /go/src/github.com/asiainfoLDP/datafoundry_oauth2
 ADD . /go/src/github.com/asiainfoLDP/datafoundry_oauth2
 
-EXPOSE 9443
+EXPOSE 80
 
 ENV SERVICE_NAME=datafoundry_oauth2
 
