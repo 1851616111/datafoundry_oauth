@@ -8,9 +8,7 @@ import (
 	"time"
 
 	"github.com/asiainfoLDP/datafoundry_oauth2/util/cache"
-	//chanutil "github.com/asiainfoLDP/datafoundry_oauth2/util/channel"
 	etcdutil "github.com/asiainfoLDP/datafoundry_oauth2/util/etcd"
-	//"github.com/asiainfoLDP/datafoundry_oauth2/util/pprof"
 )
 
 func runGitHubCacheController() {

@@ -9,9 +9,7 @@ import (
 
 	gitlabapi "github.com/asiainfoLDP/datafoundry_oauth2/gitlab"
 	"github.com/asiainfoLDP/datafoundry_oauth2/util/cache"
-	chanutil "github.com/asiainfoLDP/datafoundry_oauth2/util/channel"
 	etcdutil "github.com/asiainfoLDP/datafoundry_oauth2/util/etcd"
-	"github.com/asiainfoLDP/datafoundry_oauth2/util/pprof"
 )
 
 const (
@@ -102,23 +100,23 @@ func runGitLabCacheController() {
 	cacher.Run()
 }
 
-func initAvgIdle() float32 {
-	done := make(chan struct{}, 1)
-	defer close(done)
-	newout := chanutil.TimeReader(time.Second*IdlerTimerSec, pprof.GetStat(pprof.Line_CPU, done))
-
-	return averageIdle(newout)
-}
-
-func averageIdle(c <-chan interface{}) float32 {
-	length := len(c)
-	sum := float32(0.0)
-
-	for i := range c {
-		if cpu, ok := i.(*pprof.CPU); ok {
-			sum += cpu.Idle
-		}
-	}
-
-	return sum / float32(length)
-}
+//func initAvgIdle() float32 {
+//	done := make(chan struct{}, 1)
+//	defer close(done)
+//	newout := chanutil.TimeReader(time.Second*IdlerTimerSec, pprof.GetStat(pprof.Line_CPU, done))
+//
+//	return averageIdle(newout)
+//}
+//
+//func averageIdle(c <-chan interface{}) float32 {
+//	length := len(c)
+//	sum := float32(0.0)
+//
+//	for i := range c {
+//		if cpu, ok := i.(*pprof.CPU); ok {
+//			sum += cpu.Idle
+//		}
+//	}
+//
+//	return sum / float32(length)
+//}
