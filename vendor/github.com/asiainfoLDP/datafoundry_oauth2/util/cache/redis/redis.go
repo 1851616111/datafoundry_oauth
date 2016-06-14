@@ -1,9 +1,11 @@
 package redis
 
 import (
-	"github.com/garyburd/redigo/redis"
 	"log"
 	"time"
+
+	c "github.com/asiainfoLDP/datafoundry_oauth2/util/cache"
+	"github.com/garyburd/redigo/redis"
 )
 
 var (
@@ -36,11 +38,6 @@ func createPool(server, auth string) *redis.Pool {
 	}
 }
 
-type Cache interface {
-	HCache(key, field interface{}, value []byte) error
-	HFetch(key, field interface{}) ([]byte, error)
-}
-
 type cache struct {
 	pool *redis.Pool
 }
@@ -71,7 +68,7 @@ func (p *cache) HFetch(key, field interface{}) ([]byte, error) {
 	return b, nil
 }
 
-func CreateCache(server, auth string) Cache {
+func CreateCache(server, auth string) c.Cache {
 	REDIS_POOL = createPool(server, auth)
 	return &cache{pool: REDIS_POOL}
 }

@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	gitlabapi "github.com/asiainfoLDP/datafoundry_oauth2/gitlab"
-	//gitlabutil "github.com/asiainfoLDP/datafoundry_oauth2/util"
 	dfapi "github.com/openshift/origin/pkg/user/api/v1"
 	"log"
 	"strconv"
@@ -85,8 +84,8 @@ res:
 	retHttpCodef(200, 1200, w, "ok")
 }
 
-//curl http://127.0.0.1:9443/v1/repos/gitlab/owner -H "Authorization:Bearer twizX0NaWxdbtoFhD7wvH5L3ioClX6iSBVaF83cuAes"
-//curl http://127.0.0.1:9443/v1/repos/gitlab/orgs -H "Authorization:Bearer i1TerZwHQSsveIrHs53wr6lKdzxbJL2mVNCu8fs5Ao0"
+//curl http://127.0.0.1:9443/v1/repos/gitlab/owner -H "Authorization:Bearer V3nszMTMHl_IJalZMuZVADjAxzDJBhuhzrcb01U6AKg"
+//curl http://127.0.0.1:9443/v1/repos/gitlab/owner?cache=false -H "Authorization:Bearer V3nszMTMHl_IJalZMuZVADjAxzDJBhuhzrcb01U6AKg"
 //curl http://127.0.0.1:9443/v1/repos/gitlab/orgs -H "Authorization:Bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
 func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	userType := ps.ByName("repo")
@@ -110,28 +109,39 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 		return
 	}
 
-	projects := []gitlabapi.Project{}
-
-	b, err := Cache.HFetch("gitlab_"+option.Host+"_repo", "user_"+option.User+"_repos")
-	if err != nil {
-		retHttpCodef(400, 1400, w, "get projects(cached) err %v", err.Error())
-		return
-	}
-
-	json.Unmarshal(b, &projects)
-
-	//projects, err := glApi.Project(option.Host, option.PrivateToken).ListProjects()
-	//if err != nil {
-	//	retHttpCodef(400, 1400, w, "get projects err %v", err.Error())
-	//	return
-	//}
-
 	var p interface{}
-	switch userType {
-	case "orgs":
-		p = gitlabapi.ConverOrgProjects(projects)
-	case "owner":
-		p = gitlabapi.ConverOwnerProjects(projects)
+
+	cached := r.FormValue("cache")
+	switch cached {
+	case "false":
+		projects, err := glApi.Project(option.Host, option.PrivateToken).ListProjects()
+		if err != nil {
+			retHttpCodef(400, 1400, w, "get projects err %v", err.Error())
+			return
+		}
+
+		switch userType {
+		case "orgs":
+			p = gitlabapi.ConverOrgProjects(projects)
+		case "owner":
+			p = gitlabapi.ConverOwnerProjects(projects)
+		}
+	default:
+		switch userType {
+		case "orgs":
+			p = []gitlabapi.NewOrgProjectList{}
+			if err := CacheMan.HFetchObject("gitlab://"+option.Host, "user_"+option.User+"@orgs_repos", &p); err != nil {
+				retHttpCodef(400, 1400, w, "get gitlab orgs repos(cached) err %v", err.Error())
+				return
+			}
+
+		case "owner":
+			p = []gitlabapi.NewOwnerProjectList{}
+			if err := CacheMan.HFetchObject("gitlab://"+option.Host, "user_"+option.User+"@owner_repos", &p); err != nil {
+				retHttpCodef(400, 1400, w, "get gitlab owner repos(cached) err %v", err.Error())
+				return
+			}
+		}
 	}
 
 	type ret struct {
@@ -144,7 +154,7 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 		Info: p,
 	}
 
-	b, err = json.Marshal(rt)
+	b, err := json.Marshal(rt)
 	if err != nil {
 		retHttpCodef(400, 1400, w, "convert projects err %v", err)
 		return
@@ -153,7 +163,8 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 	retHttpCodeJson(200, 1200, w, string(b))
 }
 
-//curl http://127.0.0.1:9443/v1/gitlab/repo/43/branches -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
+//curl http://127.0.0.1:9443/v1/repos/gitlab/43/branches -H "Authorization:Bearer V3nszMTMHl_IJalZMuZVADjAxzDJBhuhzrcb01U6AKg"
+//curl http://127.0.0.1:9443/v1/repos/gitlab/43/branches?cache=false -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
 func gitLabBranchHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	repo := ps.ByName("repo")
 	var projectId int
@@ -181,26 +192,17 @@ func gitLabBranchHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		return
 	}
 
-	b, err := Cache.HFetch("gitlab_"+option.Host+"_branch", fmt.Sprintf("project_%d", projectId))
+	branches, err := glApi.Branch(option.Host, option.PrivateToken).ListBranches(projectId)
 	if err != nil {
-		retHttpCodef(400, 1400, w, "get projects(cached) err %v", err.Error())
+		retHttpCodef(400, 1400, w, "get project branches err %v", err.Error())
 		return
 	}
 
-	//json.Unmarshal(b, &bs)
-	//
-	//
-	////branches, err := glApi.Branch(option.Host, option.PrivateToken).ListBranches(projectId)
-	////if err != nil {
-	////	retHttpCodef(400, 1400, w, "get project branches err %v", err.Error())
-	////	return
-	////}
-	//
-	//b, err := json.Marshal(branches)
-	//if err != nil {
-	//	retHttpCodef(400, 1400, w, "convert branches err %v", err)
-	//	return
-	//}
+	b, err := json.Marshal(branches)
+	if err != nil {
+		retHttpCodef(400, 1400, w, "convert branches err %v", err)
+		return
+	}
 
 	retHttpCodeJson(200, 1200, w, string(b))
 

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	rsautil "github.com/asiainfoLDP/datafoundry_oauth2/util"
+	"github.com/asiainfoLDP/datafoundry_oauth2/util/cache"
 	"github.com/asiainfoLDP/datafoundry_oauth2/util/cache/redis"
 	"github.com/asiainfoLDP/datafoundry_oauth2/util/service"
 	router "github.com/julienschmidt/httprouter"
@@ -20,7 +21,8 @@ var (
 	DFHost_Key                                            string
 	DF_API_Auth                                           string
 	Redis_Addr, Redis_Port, Redis_Password                string
-	Cache                                                 redis.Cache
+	Cache                                                 cache.Cache
+	CacheMan                                              cache.CacheMan
 	KeyPool                                               *rsautil.Pool
 )
 
@@ -29,14 +31,14 @@ func init() {
 	initEnvs()
 	backingService_Redis = RedisEnv.Get("Redis_BackingService_Name", nil)
 
-	//if RedisConfig, ok := <-service.NewBackingService(service.Redis, service.ValidateHP, checkRedis, service.ErrorBackingService).GetBackingServices(backingService_Redis); !ok {
-	//	log.Fatal("init redis err")
-	//} else {
+	if RedisConfig, ok := <-service.NewBackingService(service.Redis, service.ValidateHP, checkRedis, service.ErrorBackingService).GetBackingServices(backingService_Redis); !ok {
+		log.Fatal("init redis err")
+	} else {
 
-	//Redis_Password = RedisConfig.Credential.Password
-	Redis_Addr = "117.121.97.20"
-	Redis_Port = "9999"
-	//}
+		Redis_Password = RedisConfig.Credential.Password
+		//Redis_Addr = "117.121.97.20"
+		//Redis_Port = "9999"
+	}
 
 	initOauthConfig()
 
@@ -51,7 +53,8 @@ func init() {
 
 func main() {
 
-	runController()
+	runGitLabCacheController()
+	runGitHubCacheController()
 	router := router.New()
 
 	router.GET("/v1/repos/github-redirect", githubHandler)
@@ -99,6 +102,7 @@ func initStorage() {
 func initCache() {
 	url := fmt.Sprintf("%s:%s", Redis_Addr, Redis_Port)
 	Cache = redis.CreateCache(url, Redis_Password)
+	CacheMan = cache.NewCacheMan(Cache)
 }
 
 func initOauth2Plugin() {
@@ -155,21 +159,19 @@ func initSSHKey() {
 //curl https://api.github.com/user -H "Authorization: token 620a4404e076f6cf1a10f9e00519924e43497091”
 
 func checkRedis(svc service.Service) bool {
-	//const retryTimes = 3
-	//url := fmt.Sprintf("%s:%s", svc.Credential.Host, svc.Credential.Port)
-	//fmt.Printf("Redis Addr [%s]", url)
-	//for i := 1; i <= retryTimes; i++ {
-	//	//"sb-oi4zztthwpmwy-redis.service-brokers.svc.cluster.local:26379"
-	//	addr, port := getRedisMasterAddr(url)
-	//
-	//	if len(addr) > 0 && len(port) > 0 {
-	//		Redis_Addr, Redis_Port = addr, port
-	//		log.Printf("dial redis[%s:%s] success", addr, port)
-	//		return true
-	//	}
-	//	continue
-	//}
-	//
-	//return false
-	return true
+	const retryTimes = 3
+	url := fmt.Sprintf("%s:%s", svc.Credential.Host, svc.Credential.Port)
+	fmt.Printf("Redis Addr [%s]", url)
+	for i := 1; i <= retryTimes; i++ {
+		addr, port := getRedisMasterAddr(url)
+
+		if len(addr) > 0 && len(port) > 0 {
+			Redis_Addr, Redis_Port = addr, port
+			log.Printf("dial redis[%s:%s] success", addr, port)
+			return true
+		}
+		continue
+	}
+
+	return false
 }

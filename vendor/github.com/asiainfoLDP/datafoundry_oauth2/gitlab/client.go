@@ -79,22 +79,26 @@ type Projects interface {
 func (c *RestClient) ListProjects() ([]Project, error) {
 	projects := []Project{}
 
+	const PerPage = 100
 	page := 1
 	for {
 		ps := new([]Project)
-		url := fmt.Sprintf("%s?page=%d", c.Url, page)
+		url := fmt.Sprintf("%s?per_page=%d&page=%d", c.Url, PerPage, page)
 		if err := c.Client.GetJson(ps, url, c.Credential.Key, c.Credential.Value); err != nil {
 			return projects, err
 		}
+
 		if len(*ps) > 0 {
 			projects = append(projects, *ps...)
-			page = page + 1
-			continue
 		}
 
-		return projects, nil
-	}
+		//已经达到尾页
+		if len(*ps) < 100 {
+			return projects, nil
+		}
 
+		page += 1
+	}
 }
 
 //--------------------- Branches ---------------------
@@ -114,7 +118,7 @@ func (c *RestClient) ListBranches(projectId int) ([]Branch, error) {
 	c.Url = fmt.Sprintf(c.Url, projectId)
 
 	branches := new([]Branch)
-	if err := c.Client.GetJson(branches, c.Url, c.Credential.Key, c.Credential.Value); err != nil {
+	if err := c.Client.GetJson(branches, c.Url, c.Credential.Key, c.Credential.Value); err != nil && !notFoundBranchesErr(err) {
 		return nil, err
 	}
 

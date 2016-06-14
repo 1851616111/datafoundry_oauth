@@ -135,6 +135,7 @@ func httpGetFunc(url string, f func(resp *http.Response), credential ...string) 
 }
 
 func httpAction(method, url string, body []byte, credential ...string) ([]byte, error) {
+	fmt.Println(method, url, string(body), credential)
 	var resp *http.Response
 	var err error
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(body))
