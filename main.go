@@ -20,7 +20,8 @@ var (
 	DFHost_API                                            string
 	DFHost_Key                                            string
 	DF_API_Auth                                           string
-	Redis_Addr, Redis_Port, Redis_Password                string
+	Redis_Addr, Redis_Port                                string
+	Redis_Password, Redis_Cluster_Name                    string
 	Cache                                                 cache.Cache
 	CacheMan                                              cache.CacheMan
 	KeyPool                                               *rsautil.Pool
@@ -34,8 +35,9 @@ func init() {
 	if RedisConfig, ok := <-service.NewBackingService(service.Redis, service.ValidateHP, checkRedis, service.ErrorBackingService).GetBackingServices(backingService_Redis); !ok {
 		log.Fatal("init redis err")
 	} else {
-
 		Redis_Password = RedisConfig.Credential.Password
+		Redis_Cluster_Name = RedisConfig.Credential.Name
+		log.Println("init redis config success")
 		//Redis_Addr = "117.121.97.20"
 		//Redis_Port = "9999"
 	}
