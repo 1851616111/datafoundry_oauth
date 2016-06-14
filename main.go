@@ -37,7 +37,8 @@ func init() {
 	} else {
 		Redis_Password = RedisConfig.Credential.Password
 		Redis_Cluster_Name = RedisConfig.Credential.Name
-		log.Println("init redis config success")
+
+		log.Println("init redis config success[%s:%s, %s, %s]", Redis_Addr, Redis_Port, Redis_Password, Redis_Cluster_Name)
 		//Redis_Addr = "117.121.97.20"
 		//Redis_Port = "9999"
 	}
