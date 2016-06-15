@@ -243,7 +243,7 @@ func base64Decode(s string) ([]byte, error) {
 	return base64.StdEncoding.DecodeString(s)
 }
 
-func getRedisMasterAddr(sentinelAddr string) (string, string) {
+func getRedisMasterAddr(sentinelAddr , clusterName string) (string, string) {
 	if len(sentinelAddr) == 0 {
 		log.Printf("Redis sentinelAddr is nil.")
 		return "", ""
@@ -256,9 +256,9 @@ func getRedisMasterAddr(sentinelAddr string) (string, string) {
 	}
 	defer conn.Close()
 
-	redisMasterPair, err := redis.Strings(conn.Do("SENTINEL", "get-master-addr-by-name", Redis_Cluster_Name))
+	redisMasterPair, err := redis.Strings(conn.Do("SENTINEL", "get-master-addr-by-name", clusterName))
 	if err != nil {
-		log.Printf("conn.Do(\"SENTINEL\", \"get-master-addr-by-name\", \"%s\") error(%v)", Redis_Cluster_Name, err)
+		log.Printf("conn.Do(\"SENTINEL\", \"get-master-addr-by-name\", \"%s\") error(%v)", clusterName, err)
 		return "", ""
 	}
 

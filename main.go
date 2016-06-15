@@ -36,8 +36,6 @@ func init() {
 		log.Fatal("init redis err")
 	} else {
 		Redis_Password = RedisConfig.Credential.Password
-		Redis_Cluster_Name = RedisConfig.Credential.Name
-
 		log.Println("init redis config success[%s:%s, %s, %s]", Redis_Addr, Redis_Port, Redis_Password, Redis_Cluster_Name)
 		//Redis_Addr = "117.121.97.20"
 		//Redis_Port = "9999"
@@ -166,7 +164,7 @@ func checkRedis(svc service.Service) bool {
 	url := fmt.Sprintf("%s:%s", svc.Credential.Host, svc.Credential.Port)
 	fmt.Printf("Redis Addr [%s]", url)
 	for i := 1; i <= retryTimes; i++ {
-		addr, port := getRedisMasterAddr(url)
+		addr, port := getRedisMasterAddr(url, svc.Credential.Name)
 
 		if len(addr) > 0 && len(port) > 0 {
 			Redis_Addr, Redis_Port = addr, port
