@@ -55,7 +55,9 @@ func init() {
 func main() {
 
 	runGitLabCacheController()
+	log.Println("start gitlab cache contoller success")
 	runGitHubCacheController()
+	log.Println("start github cache contoller success")
 	router := router.New()
 
 	router.GET("/v1/repos/github-redirect", githubHandler)
@@ -75,6 +77,7 @@ func main() {
 
 	log.Fatal(http.ListenAndServe(":9443", router))
 
+	log.Println("start oauth service listen on 9443")
 }
 
 func initOauthConfig() {
