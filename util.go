@@ -243,7 +243,7 @@ func base64Decode(s string) ([]byte, error) {
 	return base64.StdEncoding.DecodeString(s)
 }
 
-func getRedisMasterAddr(sentinelAddr , clusterName string) (string, string) {
+func getRedisMasterAddr(sentinelAddr, clusterName string) (string, string) {
 	if len(sentinelAddr) == 0 {
 		log.Printf("Redis sentinelAddr is nil.")
 		return "", ""

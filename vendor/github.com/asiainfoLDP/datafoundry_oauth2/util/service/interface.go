@@ -36,7 +36,6 @@ func (s *service) GetBackingServices(name string) <-chan Service {
 func initBackingServicesFunc(serviceKind, name string, validate ValidateService, check CheckService, errFunc func(err error)) <-chan Service {
 
 	svcs := getCredentials(serviceKind)
-	fmt.Printf("svc %v\n", svcs)
 	if len(svcs) == 0 {
 		if errFunc != nil {
 			errFunc(errors.New(fmt.Sprintf("backingservice %s config nil.", serviceKind)))
@@ -44,50 +43,68 @@ func initBackingServicesFunc(serviceKind, name string, validate ValidateService,
 		return nil
 	}
 
-	c := make(chan Service, 1)
+	fmt.Printf("backingservices %v\n", svcs)
 
+	c := make(chan Service, len(svcs))
 	go func() {
+		defer close(c)
+
+		find := false
 		for _, svc := range svcs {
 			if svc.Name == name {
-				fmt.Println(svc)
+				fmt.Printf("find backingservice %s\n", name)
 				c <- svc
-				return
+				find = true
 			}
 		}
-		close(c)
+
+		if !find {
+			fmt.Printf("find no backingservice %s\n", name)
+		}
 	}()
 
 	return checkBackingServices(validateBackingServices(c, validate), check)
 }
 
 func validateBackingServices(sc <-chan Service, validate ValidateService) <-chan Service {
-	c := make(chan Service)
+	nc := make(chan Service)
 
 	go func() {
-		for svc := range sc {
-			if validate(svc) {
-				c <- svc
+		defer close(nc)
+		for {
+			svc, ok := <-sc
+			if ok {
+				if validate(svc) {
+					nc <- svc
+				}
+			} else {
+				return
 			}
 		}
-		close(c)
 	}()
 
-	return c
+	return nc
 }
 
 func checkBackingServices(sc <-chan Service, checkFunc CheckService) <-chan Service {
-	c := make(chan Service, len(sc))
+	//we dont know sc length, must asign a length for not bocking return
+	c := make(chan Service, 10)
 
 	var wg sync.WaitGroup
 
-	for svc := range sc {
-		wg.Add(1)
-		go func() {
-			if checkFunc(svc) {
-				c <- svc
-			}
-			wg.Done()
-		}()
+	for {
+		svc, ok := <-sc
+		if ok {
+			wg.Add(1)
+			go func() {
+				if checkFunc(svc) {
+					c <- svc
+				}
+				wg.Done()
+			}()
+		} else {
+			break
+		}
 	}
 
 	go func() {

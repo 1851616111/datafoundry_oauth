@@ -32,11 +32,11 @@ func init() {
 	initEnvs()
 	backingService_Redis = RedisEnv.Get("Redis_BackingService_Name", nil)
 
-	if RedisConfig, ok := <-service.NewBackingService(service.Redis, service.ValidateHP, checkRedis, service.ErrorBackingService).GetBackingServices(backingService_Redis); !ok {
+	if RedisConfig, ok := <-service.NewBackingService(service.Redis, service.ValidateHP, fakeCheck, service.ErrorBackingService).GetBackingServices(backingService_Redis); !ok {
 		log.Fatal("init redis err")
 	} else {
 		Redis_Password = RedisConfig.Credential.Password
-		log.Println("init redis config success[%s:%s, %s, %s]", Redis_Addr, Redis_Port, Redis_Password, Redis_Cluster_Name)
+		log.Printf("redis url [%s@%s:%s/%s]", Redis_Password, Redis_Addr, Redis_Port, Redis_Cluster_Name)
 		//Redis_Addr = "117.121.97.20"
 		//Redis_Port = "9999"
 	}
@@ -178,4 +178,9 @@ func checkRedis(svc service.Service) bool {
 	}
 
 	return false
+}
+
+func fakeCheck(svc service.Service) bool {
+	fmt.Printf("run fake check %v\n", svc)
+	return true
 }
