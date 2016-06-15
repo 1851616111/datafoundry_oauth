@@ -77,7 +77,7 @@ func main() {
 
 	log.Fatal(http.ListenAndServe(":9443", router))
 
-	log.Println("start oauth service listen on 9443")
+	log.Println("service listen on :9443")
 }
 
 func initOauthConfig() {
