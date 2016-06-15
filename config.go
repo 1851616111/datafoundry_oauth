@@ -17,6 +17,9 @@ var (
 	DatafoundryEnv Env = &EnvOnce{
 		envs: map[string]string{"DATAFOUNDRY_HOST_ADDR": ""},
 	}
+	RedisEnv Env = &EnvOnce{
+		envs: map[string]string{"Redis_BackingService_Name": ""},
+	}
 )
 
 type Env interface {

@@ -51,7 +51,7 @@ func setDeployKey(source, key string, value interface{}) error {
 
 func getDeployKey(source, key string) (string, error) {
 	deployKey := fmt.Sprintf("/oauth/deploykeys/%s/%s", source, key)
-	return db.get(deployKey, true, false)
+	return db.getValue(deployKey)
 }
 
 func setWebHook(source, host, namespace, build string, value interface{}) error {
@@ -61,7 +61,7 @@ func setWebHook(source, host, namespace, build string, value interface{}) error 
 
 func getWebHook(source, host, namespace, build string) (string, error) {
 	webHook := fmt.Sprintf("/oauth/webhooks/%s/host/%s/namespaces/%s/builds/%s", source, host, namespace, build)
-	return db.get(webHook, true, false)
+	return db.getValue(webHook)
 }
 
 func deleteWebHook(source, host, namespace, build string) error {

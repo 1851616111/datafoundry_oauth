@@ -95,7 +95,7 @@ func githubHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	http.Redirect(w, r, redirect_url, 302)
 }
 
-//curl http://127.0.0.1:9443/v1/repos/github/owner?namespace=oauth -H  "Authorization: Bearer RYkuqpKForts4Wv8zosvjoNMZa_QMd32AEnJ6s7GgD4"
+//curl http://127.0.0.1:9443/v1/repos/github/owner?namespace=oauth -H  "Authorization: Bearer V3nszMTMHl_IJalZMuZVADjAxzDJBhuhzrcb01U6AKg"
 func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var user *api.User
 	var err error
@@ -164,22 +164,32 @@ func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httproute
 	}(result)
 
 	go func(result chan Result) {
-
 		var repos *Repos
-		if repos, err = GetOwnerRepos(userInfo); err != nil {
-			Done(done, result, 400, 1400, fmt.Sprintf("request github err %v", err))
-			return
+		var data []byte
+		cached := r.FormValue("cache")
+		switch cached {
+		case "false":
+			if repos, err = GetOwnerRepos(userInfo); err != nil {
+				Done(done, result, 400, 1400, fmt.Sprintf("request github err %v", err))
+				return
+			}
+
+			newRepos := repos.Convert()
+			data, err = json.Marshal(newRepos)
+			if err != nil {
+				Done(done, result, 400, 1400, fmt.Sprintf("convert return err %v", err))
+				return
+			}
+		default:
+
+			data, err = Cache.HFetch("www.github.com", "user_"+user.Name+"@owner_repos")
+			if err != nil {
+				retHttpCodef(400, 1400, w, "get github owner repos(cached) err %v", err.Error())
+				return
+			}
 		}
 
-		newRepos := repos.Convert()
-		b, err := json.Marshal(newRepos)
-		if err != nil {
-			Done(done, result, 400, 1400, fmt.Sprintf("convert return err %v", err))
-			return
-		}
-
-		Done(done, result, 200, 1200, fmt.Sprintf(`"infos":%s`, string(b)))
-		return
+		Done(done, result, 200, 1200, fmt.Sprintf(`"infos":%s`, string(data)))
 	}(result)
 
 	msg := []string{}
@@ -198,6 +208,8 @@ func githubOwnerReposHandler(w http.ResponseWriter, r *http.Request, _ httproute
 	retHttpCodeJson(200, 1200, w, fmt.Sprintf("{%s,%s}", msg[0], msg[1]))
 }
 
+//curl http://127.0.0.1:9443/v1/repos/github/orgs -H  "Authorization: Bearer V3nszMTMHl_IJalZMuZVADjAxzDJBhuhzrcb01U6AKg"
+//curl http://127.0.0.1:9443/v1/repos/github/orgs?cache=false -H  "Authorization: Bearer V3nszMTMHl_IJalZMuZVADjAxzDJBhuhzrcb01U6AKg"
 func githubOrgReposHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var user *api.User
 	var err error
@@ -207,36 +219,48 @@ func githubOrgReposHandler(w http.ResponseWriter, r *http.Request, _ httprouter.
 		return
 	}
 
-	var userInfo map[string]string
-	if userInfo, err = getGithubInfo(user); err != nil {
-		retHttpCodef(400, 1400, w, "get user info err %s", err.Error())
-		return
-	}
+	var data []byte
 
-	var orgs []Org
-	if orgs, err = GetOwnerOrgs(userInfo); err != nil {
-		retHttpCodef(400, 1400, w, "get orgs info err %s", err.Error())
-		return
-	}
-
-	repos := Repos{}
-	for _, v := range orgs {
-		var l *Repos
-		if l, err = GetOrgReps(userInfo, v.Login); err != nil {
-			fmt.Printf("[GET]/github.com/user/orgs, get org %s info err %s", v.Login, err.Error())
-			continue
+	cached := r.FormValue("cache")
+	switch cached {
+	case "false":
+		var userInfo map[string]string
+		if userInfo, err = getGithubInfo(user); err != nil {
+			retHttpCodef(400, 1400, w, "get user info err %s", err.Error())
+			return
 		}
-		repos = append(repos, *l...)
+
+		var orgs []Org
+		if orgs, err = GetOwnerOrgs(userInfo); err != nil {
+			retHttpCodef(400, 1400, w, "get orgs info err %s", err.Error())
+			return
+		}
+
+		repos := Repos{}
+		for _, v := range orgs {
+			var l *Repos
+			if l, err = GetOrgReps(userInfo, v.Login); err != nil {
+				fmt.Printf("[GET]/github.com/user/orgs, get org %s info err %s", v.Login, err.Error())
+				continue
+			}
+			repos = append(repos, *l...)
+		}
+
+		newRepos := repos.Convert()
+		data, err = json.Marshal(newRepos)
+		if err != nil {
+			retHttpCodef(400, 1400, w, "convert return err %v", err)
+			return
+		}
+	default:
+		if data, err = Cache.HFetch("www.github.com", "user_"+user.Name+"@orgs_repos"); err != nil {
+			retHttpCodef(400, 1400, w, "get github orgs repos(cached) err %v", err.Error())
+			return
+		}
+
 	}
 
-	newRepos := repos.Convert()
-	b, err := json.Marshal(newRepos)
-	if err != nil {
-		retHttpCodef(400, 1400, w, "convert return err %s", string(b))
-		return
-	}
-
-	retHttpCodeJson(200, 1200, w, string(b))
+	retHttpCodeJson(200, 1200, w, string(data))
 }
 
 func getGithubBranchHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

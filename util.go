@@ -7,10 +7,12 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/asiainfoLDP/datafoundry_oauth2/util/rand"
+	"github.com/garyburd/redigo/redis"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 func httpAddrMaker(addr string) string {
@@ -133,6 +135,7 @@ func httpGetFunc(url string, f func(resp *http.Response), credential ...string) 
 }
 
 func httpAction(method, url string, body []byte, credential ...string) ([]byte, error) {
+	fmt.Println(method, url, string(body), credential)
 	var resp *http.Response
 	var err error
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(body))
@@ -238,4 +241,29 @@ func base64Encode(src []byte) string {
 
 func base64Decode(s string) ([]byte, error) {
 	return base64.StdEncoding.DecodeString(s)
+}
+
+func getRedisMasterAddr(sentinelAddr, clusterName string) (string, string) {
+	if len(sentinelAddr) == 0 {
+		log.Printf("Redis sentinelAddr is nil.")
+		return "", ""
+	}
+
+	conn, err := redis.DialTimeout("tcp", sentinelAddr, time.Second*10, time.Second*10, time.Second*10)
+	if err != nil {
+		log.Printf("redis dial timeout(\"tcp\", \"%s\", %d) error(%v)", sentinelAddr, time.Second, err)
+		return "", ""
+	}
+	defer conn.Close()
+
+	redisMasterPair, err := redis.Strings(conn.Do("SENTINEL", "get-master-addr-by-name", clusterName))
+	if err != nil {
+		log.Printf("conn.Do(\"SENTINEL\", \"get-master-addr-by-name\", \"%s\") error(%v)", clusterName, err)
+		return "", ""
+	}
+
+	if len(redisMasterPair) != 2 {
+		return "", ""
+	}
+	return redisMasterPair[0], redisMasterPair[1]
 }

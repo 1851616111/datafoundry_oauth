@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	gitlabapi "github.com/asiainfoLDP/datafoundry_oauth2/gitlab"
-	//gitlabutil "github.com/asiainfoLDP/datafoundry_oauth2/util"
 	dfapi "github.com/openshift/origin/pkg/user/api/v1"
 	"log"
 	"strconv"
@@ -86,8 +85,8 @@ res:
 	retHttpCodef(200, 1200, w, "ok")
 }
 
-//curl http://127.0.0.1:9443/v1/repos/gitlab/owner -H "Authorization:Bearer twizX0NaWxdbtoFhD7wvH5L3ioClX6iSBVaF83cuAes"
-//curl http://127.0.0.1:9443/v1/repos/gitlab/orgs -H "Authorization:Bearer i1TerZwHQSsveIrHs53wr6lKdzxbJL2mVNCu8fs5Ao0"
+//curl http://127.0.0.1:9443/v1/repos/gitlab/owner -H "Authorization:Bearer V3nszMTMHl_IJalZMuZVADjAxzDJBhuhzrcb01U6AKg"
+//curl http://127.0.0.1:9443/v1/repos/gitlab/owner?cache=false -H "Authorization:Bearer V3nszMTMHl_IJalZMuZVADjAxzDJBhuhzrcb01U6AKg"
 //curl http://127.0.0.1:9443/v1/repos/gitlab/orgs -H "Authorization:Bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
 func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	userType := ps.ByName("repo")
@@ -111,18 +110,39 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 		return
 	}
 
-	projects, err := glApi.Project(option.Host, option.PrivateToken).ListProjects()
-	if err != nil {
-		retHttpCodef(400, 1400, w, "get projects err %v", err.Error())
-		return
-	}
-
 	var p interface{}
-	switch userType {
-	case "orgs":
-		p = gitlabapi.ConverOrgProjects(projects)
-	case "owner":
-		p = gitlabapi.ConverOwnerProjects(projects)
+
+	cached := r.FormValue("cache")
+	switch cached {
+	case "false":
+		projects, err := glApi.Project(option.Host, option.PrivateToken).ListProjects()
+		if err != nil {
+			retHttpCodef(400, 1400, w, "get projects err %v", err.Error())
+			return
+		}
+
+		switch userType {
+		case "orgs":
+			p = gitlabapi.ConverOrgProjects(projects)
+		case "owner":
+			p = gitlabapi.ConverOwnerProjects(projects)
+		}
+	default:
+		switch userType {
+		case "orgs":
+			p = []gitlabapi.NewOrgProjectList{}
+			if err := CacheMan.HFetchObject("gitlab://"+option.Host, "user_"+option.User+"@orgs_repos", &p); err != nil {
+				retHttpCodef(400, 1400, w, "get gitlab orgs repos(cached) err %v", err.Error())
+				return
+			}
+
+		case "owner":
+			p = []gitlabapi.NewOwnerProjectList{}
+			if err := CacheMan.HFetchObject("gitlab://"+option.Host, "user_"+option.User+"@owner_repos", &p); err != nil {
+				retHttpCodef(400, 1400, w, "get gitlab owner repos(cached) err %v", err.Error())
+				return
+			}
+		}
 	}
 
 	type ret struct {
@@ -144,7 +164,8 @@ func gitLabOwnerReposHandler(w http.ResponseWriter, r *http.Request, ps httprout
 	retHttpCodeJson(200, 1200, w, string(b))
 }
 
-//curl http://127.0.0.1:9443/v1/gitlab/repo/43/branches -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
+//curl http://127.0.0.1:9443/v1/repos/gitlab/43/branches -H "Authorization:Bearer V3nszMTMHl_IJalZMuZVADjAxzDJBhuhzrcb01U6AKg"
+//curl http://127.0.0.1:9443/v1/repos/gitlab/43/branches?cache=false -H "Authorization:bearer 7TlqnRS1S-x18MVqaKIhGRSvyTLhAd5t5Ca3JjH5Uu8"
 func gitLabBranchHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	repo := ps.ByName("repo")
 	var projectId int
@@ -396,7 +417,7 @@ func gitLabLoginHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 
 func getGitLabOptionByDFUser(name string) (*gitLabInfo, error) {
 	key := fmt.Sprintf("/df_service/%s/df_user/%s/oauth/gitlabs/info", DFHost_Key, name)
-	s, err := db.get(key, true, false)
+	s, err := db.getValue(key)
 	if err != nil {
 		return nil, err
 	}

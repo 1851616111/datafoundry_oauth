@@ -1,0 +1,34 @@
+{
+  "MongoDB": [
+    {
+      "name": "Mongo_repository",
+      "label": "",
+      "plan": "ShareandCommon",
+      "credentials": {
+        "Host": "dashboard.servicebroker.dataos.io",
+        "Name": "992665d0-1ca7-11e6-813a-fa163d0e0615",
+        "Password": "3a2f75ef3c1cb7c037001e26a652b9f0",
+        "Port": "27017",
+        "Uri": "mongodb://c819c39312f30201734f893dcb1c78ce:3a2f75ef3c1cb7c037001e26a652b9f0@dashboard.servicebroker.dataos.io:27017/992665d0-1ca7-11e6-813a-fa163d0e0615",
+        "Username": "c819c39312f30201734f893dcb1c78ce",
+        "Vhost": ""
+      }
+    }
+  ],
+  "Mysql": [
+    {
+      "name": "Mysql_repository",
+      "label": "",
+      "plan": "Experimental",
+      "credentials": {
+        "Host": "mysqlshare.servicebroker.dataos.io",
+        "Name": "4cbb7a133ade82d",
+        "Password": "074e0e204c30eda",
+        "Port": "3306",
+        "Uri": "mysql://ba52de78e578cb8:074e0e204c30eda@mysqlshare.servicebroker.dataos.io:3306/4cbb7a133ade82d",
+        "Username": "ba52de78e578cb8",
+        "Vhost": ""
+      }
+    }
+  ]
+}

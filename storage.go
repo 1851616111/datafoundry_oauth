@@ -24,28 +24,13 @@ func (c *storeConfig) newClient() Store {
 
 type Store interface {
 	set(key string, value interface{}) error
-	get(key string, sort, recursive bool) (string, error)
+	getValue(key string) (string, error)
+	getDir(key string) (*etcd.Response, error)
 	delete(key string, recursive bool) error
 }
 
 type Etcd struct {
 	*etcd.Client
-}
-
-func notReachErrRetry(f func(c *Etcd) error) (err error) {
-	err = f(db.(*Etcd))
-
-	if isEtcdNotReachableErr(err) {
-		refreshDB()
-		err = f(db.(*Etcd))
-
-		if isEtcdNotReachableErr(err) {
-			err = errors.New("Server Internal Error")
-			return
-		}
-	}
-
-	return
 }
 
 func (c *Etcd) set(key string, value interface{}) error {
@@ -73,12 +58,12 @@ func (c *Etcd) set(key string, value interface{}) error {
 	return nil
 }
 
-func (c *Etcd) get(key string, sort, recursive bool) (string, error) {
+func (c *Etcd) getValue(key string) (string, error) {
 	var rsp *etcd.Response
 	var err error
 
 	err = notReachErrRetry(func(c *Etcd) error {
-		rsp, err = c.Get(key, sort, recursive)
+		rsp, err = c.Get(key, true, false)
 		return err
 	})
 
@@ -87,6 +72,21 @@ func (c *Etcd) get(key string, sort, recursive bool) (string, error) {
 	}
 
 	return rsp.Node.Value, nil
+}
+
+func (c *Etcd) getDir(key string) (*etcd.Response, error) {
+	var rsp *etcd.Response
+	var err error
+
+	err = notReachErrRetry(func(c *Etcd) error {
+		rsp, err = c.Get(key, true, true)
+		return err
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 func (c *Etcd) delete(key string, recursive bool) error {
@@ -105,13 +105,20 @@ func (c *Etcd) delete(key string, recursive bool) error {
 	return nil
 }
 
-func getJson(key string, box interface{}) error {
-	b, err := db.get(key, true, false)
-	if err != nil {
-		return err
+func notReachErrRetry(f func(c *Etcd) error) (err error) {
+	err = f(db.(*Etcd))
+
+	if isEtcdNotReachableErr(err) {
+		refreshDB()
+		err = f(db.(*Etcd))
+
+		if isEtcdNotReachableErr(err) {
+			err = errors.New("Server Internal Error")
+			return
+		}
 	}
 
-	return json.Unmarshal([]byte(b), box)
+	return
 }
 
 func isEtcdNotReachableErr(err error) bool {

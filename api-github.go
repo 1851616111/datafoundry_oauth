@@ -3,18 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	Go "github.com/asiainfoLDP/datafoundry_oauth2/util/goroutine"
 	"log"
-	"net/http"
-	"strconv"
-	"strings"
 )
 
 const (
 	GitHub_API_User          = "https://api.github.com/user"
 	GitHub_API_User_Repos    = "https://api.github.com/users/%s/repos"
 	GitHub_API_Owner_Orgs    = "https://api.github.com/user/orgs"
-	GitHub_API_Org_Repos     = "https://api.github.com/orgs/%s/repos?page=%d"
+	GitHub_API_Org_Repos     = "https://api.github.com/orgs/%s/repos"
 	GitHub_API_Repo_Branches = "https://api.github.com/repos/%s/%s/branches"
 	GitHub_API_Repo_WebHook  = "https://api.github.com/repos/%s/%s/hooks"
 )
@@ -77,102 +73,36 @@ func GetOwnerOrgs(userInfo map[string]string) ([]Org, error) {
 func GetOrgReps(userInfo map[string]string, org string) (*Repos, error) {
 	credKey, credValue := getCredentials(userInfo)
 
-	var firstPage int = 1
-	var lastPage int
-	var err error
+	const paramMaxPerPage = 100
+	page := 1
 
 	repos := &Repos{}
-	resp_header_value_c := make(chan []string, 1)
-
-	url := fmt.Sprintf(GitHub_API_Org_Repos, org, firstPage)
-
-	b, err := httpGetFunc(url, func(resp *http.Response) {
-		const GitHubApiLastPageKey = "Link"
-		asyncHeaderKey(resp.Header, GitHubApiLastPageKey, resp_header_value_c)
-		return
-	}, credKey, credValue)
-
-	if err := json.Unmarshal(b, &repos); err != nil {
-		log.Printf("get github orgs reps err %v", err)
-		return repos, err
-	}
-
-	if s, ok := <-resp_header_value_c; ok {
-		//s = <https://api.github.com/organizations/14065116/repos?page=2>; rel="next", <https://api.github.com/organizations/14065116/repos?page=4>; rel="last"
-		//need 4
-		str := s[0][strings.Index(s[0], ","):]
-		lastPageStr := strings.TrimSpace(middleStr(str, "page=", ">"))
-		if lastPage, err = strconv.Atoi(lastPageStr); err != nil {
-			log.Println("get github orgs last page err", err)
+	for {
+		url := fmt.Sprintf(GitHub_API_Org_Repos, org) + fmt.Sprintf("?per_page=%d&page=%d", paramMaxPerPage, page)
+		b, err := get(url, credKey, credValue)
+		if err != nil {
+			log.Printf("get github orgs repos err %v", err)
+			return nil, err
 		}
-	}
 
-	if lastPage >= 2 {
-		goNum := lastPage - 1
-		var goFunc = func(goTime int) interface{} {
-			page := goTime + 1
-
-			url := fmt.Sprintf(GitHub_API_Org_Repos, org, page)
-			b, err := get(url, credKey, credValue)
-			if err != nil {
-				log.Printf("go get github orgs reps times=%d err %v", goTime, err)
-				return nil
-			}
-
-			repos := &Repos{}
-
-			if err := json.Unmarshal(b, &repos); err != nil {
-				log.Printf("go get github orgs reps times=%d  err %v", goTime, err)
-				return nil
-			}
-
-			return *repos
+		section := &Repos{}
+		if err := json.Unmarshal(b, &section); err != nil {
+			log.Printf("get github orgs reps err %v", err)
+			return repos, err
 		}
-		resCh := make(chan interface{}, goNum)
 
-		Go.Go(goNum, goFunc, resCh)
-
-		for res := range resCh {
-			if reps, ok := res.(Repos); ok {
-				*repos = append(*repos, reps...)
-			}
+		if len(*section) > 0 {
+			*repos = append(*repos, *section...)
 		}
+
+		//最后一页
+		if len(*section) < 100 {
+			break
+		}
+		page += 1
 	}
 
 	return repos, nil
-}
-
-func asyncHeaderKey(header http.Header, key string, value_c chan []string) {
-	if header == nil {
-		return
-	}
-
-	if vs, ok := header[key]; ok {
-		value_c <- vs
-	}
-
-	//no matter success or fail, close value_c to info main goroutine
-	close(value_c)
-	return
-}
-
-//"Link":[]string{"<https://api.github.com/organizations/14065116/repos?page=2>; rel=\"next\", <https://api.github.com/organizations/14065116/repos?page=4>; rel=\"last\""}
-func middleStr(s, start, end string) string {
-	if len(s) == 0 {
-		return ""
-	}
-
-	startIndex, endIndex := strings.Index(s, start), strings.LastIndex(s, end)
-
-	if startIndex == -1 || endIndex == -1 {
-		return ""
-	}
-
-	if startIndex+len(start) >= endIndex {
-		return ""
-	}
-
-	return s[startIndex+len(start) : endIndex]
 }
 
 func GetRepoBranck(userInfo map[string]string, user, repo string) ([]map[string]interface{}, error) {
@@ -201,7 +131,6 @@ func CreateRepoWebHook(user, repo string, option *GitHubWebHookOption, credentia
 		return nil, err
 	}
 
-	fmt.Println(credentialKey, credentialValue)
 	b, err := post(url, byte, credentialKey, credentialValue)
 	if err != nil {
 		return nil, err

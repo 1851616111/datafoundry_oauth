@@ -91,6 +91,18 @@ func httpGet(url string, credential ...string) ([]byte, error) {
 			return nil, err
 		}
 		switch resp.StatusCode {
+		case 502:
+			fmt.Printf("unknown err %v", err)
+			fmt.Println(" %s %s", url, credential, resp.StatusCode)
+		case 504:
+			fmt.Printf("unknown err %v", err)
+			fmt.Println(" %s %s", url, credential, resp.StatusCode)
+			b, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				fmt.Printf("read body  err %v", err)
+			}
+			fmt.Printf("%s", string(b))
+
 		case 404:
 			return nil, ErrNotFound
 		case 401:
