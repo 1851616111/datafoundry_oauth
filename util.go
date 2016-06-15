@@ -258,7 +258,7 @@ func getRedisMasterAddr(sentinelAddr string) (string, string) {
 
 	redisMasterPair, err := redis.Strings(conn.Do("SENTINEL", "get-master-addr-by-name", Redis_Cluster_Name))
 	if err != nil {
-		log.Printf("conn.Do(\"SENTINEL\", \"get-master-addr-by-name\", \"%s\") error(%v)", "mymaster", err)
+		log.Printf("conn.Do(\"SENTINEL\", \"get-master-addr-by-name\", \"%s\") error(%v)", Redis_Cluster_Name, err)
 		return "", ""
 	}
 
