@@ -20,10 +20,12 @@ func (o *GitHubWebHookOption) DefaultOption() {
 	o.Active = true
 	o.Name = "web"
 	o.Events = []string{"push", "pull_request", "status"}
+	o.Config.ContentType = "json"
 }
 
 type CConfig struct {
 	Url string `json:"url,omitempty"`
+	ContentType string `json:"content_type"`
 }
 
 func gitHubWebHookchanged(old, new *GitHubWebHookOption) bool {
@@ -37,6 +39,10 @@ func gitHubWebHookchanged(old, new *GitHubWebHookOption) bool {
 	}
 
 	if old.Active != new.Active {
+		return true
+	}
+
+	if old.Config != new.Config {
 		return true
 	}
 
