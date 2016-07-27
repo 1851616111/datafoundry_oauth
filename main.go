@@ -70,6 +70,7 @@ func main() {
 	router.GET("/v1/repos/gitlab/:repo/branches", gitLabBranchHandler)
 	router.POST("/v1/repos/gitlab/authorize/deploy", gitLabSecretHandler)
 
+	router.GET("/v1/repos/source/:source/webhooks", getWebHookHandler)
 	router.POST("/v1/repos/source/:source/webhooks", createWebHookHandler)
 	router.DELETE("/v1/repos/source/:source/webhooks", deleteWebHookHandler)
 

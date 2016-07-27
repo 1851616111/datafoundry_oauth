@@ -13,6 +13,10 @@ import (
 	dfapi "github.com/openshift/origin/pkg/user/api/v1"
 )
 
+const (
+	platform_gitlab_host = "https://code.dataos.io"
+)
+
 var WebHookKind = []string{"github", "gitlab"}
 
 //curl http://etcdsystem.servicebroker.dataos.io:2379/v2/keys/oauth/webhooks  -u asiainfoLDP:6ED9BA74-75FD-4D1B-8916-842CB936AC1A
@@ -185,6 +189,60 @@ func createWebHookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.
 			return
 		}
 	}
+}
+
+//curl http://etcdsystem.servicebroker.dataos.io:2379/v2/keys/oauth/webhooks  -u asiainfoLDP:6ED9BA74-75FD-4D1B-8916-842CB936AC1A
+//curl 127.0.0.1:9443/v1/repos/source/gitlab/webhooks?namespace=oauth&build=43   -H "Authorization:Bearer cIOXAervAeS0ErI6Ilm5vp1cYOMrAZ1ic7EA6e09GuE"
+//curl 127.0.0.1:9443/v1/repos/source/github/webhooks?namespace=oauth&build=datafoundry_oauth2  -H "Authorization:Bearer cIOXAervAeS0ErI6Ilm5vp1cYOMrAZ1ic7EA6e09GuE"
+func getWebHookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+
+	token := r.Header.Get("Authorization")
+	var err error
+	if _, err := authDF(token); err != nil {
+		retHttpCodef(401, 1401, w, "auth err %s", err.Error())
+		return
+	}
+
+	source := ps.ByName("source")
+	if !contains(WebHookKind, source) {
+		retHttpCode(400, 1400, w, fmt.Sprintf("unknown source %s.", source))
+		return
+	}
+
+	namespace, build := r.FormValue("namespace"), r.FormValue("build")
+	if len(strings.TrimSpace(namespace)) == 0 {
+		retHttpCode(400, 1400, w, "param namespace must not be nil.")
+		return
+	}
+	if len(strings.TrimSpace(build)) == 0 {
+		retHttpCode(400, 1400, w, "param build must not be nil.")
+		return
+	}
+
+	var host string
+	switch source {
+	case "github":
+		host = "www.github.com"
+
+	case "gitlab":
+
+		host = platform_gitlab_host
+	}
+
+	_, err = getWebHook(source, host, namespace, build)
+	if err != nil {
+		if EtcdKeyNotFound(err) {
+			retHttpCode(400, 1404, w, "not found")
+			return
+		}
+
+		retHttpCode(400, 1400, w, "unkonw err", err)
+		return
+
+	}
+
+	retHttpCodef(200, 1200, w, "ok")
+	return
 }
 
 //curl -XDELETE 127.0.0.1:9443/v1/repos/source/gitlab/webhooks?host=https://code.dataos.io\&namespace=oauth\&build=oauth\&repo=43 -H "Authorization:Bearer uH7VUpN5c9CcL4KWFCuAAGqk4INvRb4vgpsZo0FOUFA"
