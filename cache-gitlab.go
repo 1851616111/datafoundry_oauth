@@ -74,7 +74,7 @@ func runGitLabCacheController() {
 
 			projects, err := glApi.Project(host, privateToken).ListProjects()
 			if err != nil {
-				fmt.Printf("controller loop get gitlab project err %v\n", err)
+				fmt.Printf("controller loop get %s gitlab project err: %v\n", user, err)
 				return
 			}
 
